@@ -4,8 +4,9 @@
     <header class="landing-header">
       <div class="container header-content">
         <a href="#top" class="brand">
-          <v-icon color="#D32F2F" class="mr-2">mdi-tools</v-icon>
-          <span style="color: #121212;">Repair</span><span style="color: #D32F2F;">Hub</span>
+          <v-img src="/icon.svg" contain alt="RepairHub Logo" class="mr-2" style="height: 50px; width: 70px;"></v-img>
+          
+          <!-- <span style="color: #121212;">Repair</span><span style="color: #D32F2F;">Hub</span> -->
         </a>
         <div class="nav-links">
           <a href="#how-it-works" class="nav-link">How it works</a>

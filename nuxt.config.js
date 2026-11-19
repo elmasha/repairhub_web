@@ -29,7 +29,7 @@ export default {
   },
 
   env: {
-    API_BASE_URL: process.env.API_BASE_URL || 'https://habahabaserver-production.up.railway.app/api/v1'
+    API_BASE_URL: process.env.API_BASE_URL || 'https://repairhubserver-production.up.railway.app/api/v1'
   },
 
   components: true,

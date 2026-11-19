@@ -21,19 +21,14 @@
     <!-- Page-level error -->
     <v-alert
       v-if="pageError"
-      type="error"
-      dense
-      outlined
-      class="mb-4 text-left"
-      dismissible
-      @input="pageError = ''"
+      type="error" dense outlined class="mb-4 text-left"
+      dismissible @input="pageError = ''"
     >
       {{ pageError }}
     </v-alert>
 
     <!-- Control card: segmented tabs + summary + search -->
     <v-card class="control-card mb-6" elevation="0">
-      <!-- Segmented tabs -->
       <div class="segmented">
         <button
           v-for="t in categories"
@@ -72,12 +67,9 @@
           v-model="search"
           prepend-inner-icon="mdi-magnify"
           label="Search by name or SKU..."
-          outlined
-          dense
-          color="primary"
+          outlined dense color="primary"
           class="search-bar"
-          clearable
-          hide-details
+          clearable hide-details
         />
       </div>
     </v-card>
@@ -95,9 +87,9 @@
           <thead>
             <tr>
               <th class="text-left">Item</th>
+              <th class="text-left">Brand / Model</th>
               <th class="text-left">SKU</th>
               <th class="text-left">Stock</th>
-              <th class="text-right">Cost</th>
               <th class="text-right">Sell</th>
               <th class="text-right">Actions</th>
             </tr>
@@ -106,6 +98,15 @@
             <tr v-for="part in filteredItems" :key="part.id" class="table-row">
               <td>
                 <div class="item-name">{{ part.name }}</div>
+              </td>
+              <td>
+                <div v-if="part.brand" class="font-weight-bold" style="font-size: 0.85rem;">
+                  {{ part.brand.name }}
+                </div>
+                <div v-if="part.deviceModel" class="text-caption text-grey">
+                  {{ part.deviceModel.name }}
+                </div>
+                <span v-if="!part.brand && !part.deviceModel" class="text-grey">—</span>
               </td>
               <td>
                 <span v-if="part.sku" class="sku-pill">{{ part.sku }}</span>
@@ -117,7 +118,6 @@
                   {{ part.quantity }} left
                 </span>
               </td>
-              <td class="text-right money-muted">KES {{ formatMoney(part.costPrice) }}</td>
               <td class="text-right money-strong">KES {{ formatMoney(part.sellPrice) }}</td>
               <td class="text-right">
                 <v-btn icon small class="edit-btn" title="Edit item" @click="openEditDialog(part)">
@@ -155,6 +155,10 @@
           <v-btn icon x-small class="edit-btn" @click="openEditDialog(part)">
             <v-icon x-small>mdi-pencil</v-icon>
           </v-btn>
+        </div>
+
+        <div v-if="part.brand || part.deviceModel" class="text-caption text-grey mb-2">
+          {{ part.brand?.name }} {{ part.deviceModel?.name }}
         </div>
 
         <div class="d-flex align-center mb-2">
@@ -209,12 +213,42 @@
 
           <v-text-field
             v-model.trim="form.name"
-            label="Item Name"
+            label="Item Name (e.g. Screen Assembly)"
             outlined dense color="primary"
             :disabled="saving"
             :error-messages="fieldErrors.name"
             @input="generateSku"
           />
+
+          <!-- NEW: Brand and Model Dropdowns -->
+          <v-row dense>
+            <v-col cols="12" sm="6">
+              <v-select
+                v-model="form.brandId"
+                :items="brands"
+                item-text="name"
+                item-value="id"
+                label="Brand (Optional)"
+                outlined dense color="primary"
+                :disabled="saving"
+                clearable
+                @change="loadModels(form.brandId)"
+              />
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-select
+                v-model="form.modelId"
+                :items="models"
+                item-text="name"
+                item-value="id"
+                label="Model (Optional)"
+                outlined dense color="primary"
+                :disabled="saving || !form.brandId"
+                :loading="loadingModels"
+                clearable
+              />
+            </v-col>
+          </v-row>
 
           <v-text-field
             v-model.trim="form.sku"
@@ -231,8 +265,7 @@
             <v-col cols="12" sm="4">
               <v-text-field
                 v-model.number="form.quantity"
-                label="Quantity"
-                type="number" min="0"
+                label="Quantity" type="number" min="0"
                 outlined dense color="primary"
                 :disabled="saving"
                 :error-messages="fieldErrors.quantity"
@@ -241,8 +274,7 @@
             <v-col cols="12" sm="4">
               <v-text-field
                 v-model.number="form.costPrice"
-                label="Cost Price"
-                type="number" min="0"
+                label="Cost Price" type="number" min="0"
                 outlined dense color="primary"
                 :disabled="saving"
                 :error-messages="fieldErrors.costPrice"
@@ -252,8 +284,7 @@
             <v-col cols="12" sm="4">
               <v-text-field
                 v-model.number="form.sellPrice"
-                label="Sell Price"
-                type="number" min="0"
+                label="Sell Price" type="number" min="0"
                 outlined dense color="primary"
                 :disabled="saving"
                 :error-messages="fieldErrors.sellPrice"
@@ -309,6 +340,12 @@ export default {
       skuManuallyEdited: false,
       isDesktop: true,
       snackbar: { show: false, text: '', color: 'success' },
+      
+      // NEW: Brand and Model data
+      brands: [],
+      models: [],
+      loadingModels: false,
+
       categories: [
         { value: 'SPARE_PART', label: 'Spare Parts', icon: 'mdi-cog' },
         { value: 'ACCESSORY',  label: 'Accessories', icon: 'mdi-headphones' },
@@ -318,6 +355,8 @@ export default {
         name: '',
         sku: '',
         category: 'SPARE_PART',
+        brandId: null,
+        modelId: null,
         quantity: 0,
         costPrice: 0,
         sellPrice: 0,
@@ -345,13 +384,14 @@ export default {
         const q = this.search.toLowerCase()
         items = items.filter(p =>
           p.name?.toLowerCase().includes(q) ||
-          p.sku?.toLowerCase().includes(q)
+          p.sku?.toLowerCase().includes(q) ||
+          p.brand?.name?.toLowerCase().includes(q) ||
+          p.deviceModel?.name?.toLowerCase().includes(q)
         )
       }
       return items
     },
 
-    // Total stock value for the active category (cost basis)
     categoryValue() {
       return this.filteredItems.reduce((s, p) => s + (p.costPrice || 0) * (p.quantity || 0), 0)
     },
@@ -360,7 +400,6 @@ export default {
       return this.filteredItems.filter(p => p.quantity > 0 && p.quantity < 5).length
     },
 
-    // Margin preview in the dialog (0 = unknown/blank)
     marginPct() {
       const cost = Number(this.form.costPrice)
       const sell = Number(this.form.sellPrice)
@@ -372,7 +411,7 @@ export default {
   async mounted() {
     this.updateViewport()
     if (process.client) window.addEventListener('resize', this.updateViewport)
-    await this.fetchParts()
+    await Promise.all([this.fetchParts(), this.fetchBrands()])
   },
 
   beforeDestroy() {
@@ -398,16 +437,42 @@ export default {
       }
     },
 
+    async fetchBrands() {
+      try {
+        this.brands = await this.$axios.$get('/api/catalog/brands')
+      } catch (e) {
+        console.error('Failed to load brands', e)
+      }
+    },
+
+    async loadModels(brandId) {
+      this.form.modelId = null
+      this.models = []
+      if (!brandId) return
+      
+      this.loadingModels = true
+      try {
+        this.models = await this.$axios.$get(`/api/catalog/brands/${brandId}/models`)
+      } catch (e) {
+        console.error('Failed to load models', e)
+      } finally {
+        this.loadingModels = false
+      }
+    },
+
     openCreateDialog() {
       this.isEditing = false
       this.editingId = null
       this.skuManuallyEdited = false
       this.error = ''
       this.fieldErrors = {}
+      this.models = []
       this.form = {
         name: '',
         sku: '',
         category: this.activeCategory,
+        brandId: null,
+        modelId: null,
         quantity: 0,
         costPrice: 0,
         sellPrice: 0,
@@ -425,10 +490,20 @@ export default {
         name: part.name,
         sku: part.sku || '',
         category: part.category || 'SPARE_PART',
+        brandId: part.brandId || null,
+        modelId: part.modelId || null,
         quantity: part.quantity,
         costPrice: part.costPrice,
         sellPrice: part.sellPrice,
       }
+      
+      // If editing and brand exists, load the models
+      if (part.brandId) {
+        this.loadModels(part.brandId)
+      } else {
+        this.models = []
+      }
+      
       this.dialog = true
     },
 
@@ -485,7 +560,6 @@ export default {
         return
       }
       if (Number(this.form.sellPrice) < Number(this.form.costPrice)) {
-        // Soft warning, not a blocker — loss-leader sales are legitimate
         this.error = 'Note: sell price is below cost. You can still save.'
       }
 
@@ -495,6 +569,8 @@ export default {
           name: this.form.name,
           sku: this.form.sku || null,
           category: this.form.category,
+          brandId: this.form.brandId || null,
+          modelId: this.form.modelId || null,
           quantity: parseInt(this.form.quantity) || 0,
           costPrice: parseFloat(this.form.costPrice) || 0,
           sellPrice: parseFloat(this.form.sellPrice) || 0,

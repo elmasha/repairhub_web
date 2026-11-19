@@ -8,7 +8,6 @@
           <span style="color: #D32F2F;">Repair</span>Hub POS
         </a>
         <div class="d-flex align-center">
-          <!-- Standard href anchors -->
           <a href="#how-it-works" class="nav-link text-decoration-none font-weight-bold text-black mr-6 hidden-sm-and-down">How it works</a>
           <a href="#pricing" class="nav-link text-decoration-none font-weight-bold text-black mr-6 hidden-sm-and-down">Pricing</a>
           <a href="#faq" class="nav-link text-decoration-none font-weight-bold text-black mr-6 hidden-sm-and-down">FAQ</a>
@@ -206,7 +205,7 @@
       </div>
     </section>
 
-    <!-- Pricing Section -->
+    <!-- Pricing Section (DYNAMIC) -->
     <section class="py-16 px-4" id="pricing" style="background: #F8FAFC;">
       <div style="max-width: 1000px; margin: 0 auto;">
         <div class="text-center mb-10">
@@ -215,53 +214,36 @@
         </div>
 
         <v-row justify="center">
-          <!-- Starter Plan -->
-          <v-col cols="12" md="5">
-            <v-card class="pricing-card" outlined elevation="0">
+          <!-- Loop through plans from the database -->
+          <v-col v-for="(plan, index) in plans" :key="plan.id" cols="12" md="5">
+            <v-card class="pricing-card" :class="{ 'featured-card': index === 1 }" outlined elevation="0" :elevation="index === 1 ? 12 : 0">
+              
+              <!-- Show 'Most Popular' badge on the 2nd plan -->
+              <div v-if="index === 1" class="featured-badge">MOST POPULAR</div>
+              
               <div class="pa-6">
-                <h3 class="text-h5 font-weight-bold mb-2">Starter</h3>
+                <h3 class="text-h5 font-weight-bold mb-2">{{ plan.name }}</h3>
                 <div class="d-flex align-end mb-4">
-                  <span class="text-h3 font-weight-black">KES 1,500</span>
+                  <span class="text-h3 font-weight-black">KES {{ formatMoney(plan.priceKes) }}</span>
                   <span class="text-subtitle-1 text-grey ml-2 mb-1">/month</span>
                 </div>
-                <p class="text-body-2 text-grey-darken-1 mb-6">Perfect for single-location phone & laptop repair shops.</p>
+                <p class="text-body-2 text-grey-darken-1 mb-6">
+                  {{ index === 0 ? 'Perfect for single-location phone & laptop repair shops.' : 'For busy shops with multiple technicians and higher volume.' }}
+                </p>
                 <v-list dense class="transparent">
-                  <v-list-item class="px-0"><v-icon color="success" small class="mr-2">mdi-check</v-icon> 1 Branch</v-list-item>
-                  <v-list-item class="px-0"><v-icon color="success" small class="mr-2">mdi-check</v-icon> Unlimited Repairs & Sales</v-list-item>
+                  <v-list-item class="px-0"><v-icon color="success" small class="mr-2">mdi-check</v-icon> {{ plan.maxBranches }} Branch{{ plan.maxBranches > 1 ? 'es' : '' }}</v-list-item>
+                  <v-list-item class="px-0"><v-icon color="success" small class="mr-2">mdi-check</v-icon> {{ plan.maxRepairs ? plan.maxRepairs + ' Repairs / mo' : 'Unlimited Repairs' }}</v-list-item>
                   <v-list-item class="px-0"><v-icon color="success" small class="mr-2">mdi-check</v-icon> Inventory Management</v-list-item>
                   <v-list-item class="px-0"><v-icon color="success" small class="mr-2">mdi-check</v-icon> M-Pesa Payment Tracking</v-list-item>
+                  <v-list-item class="px-0"><v-icon color="success" small class="mr-2">mdi-check</v-icon> Up to {{ plan.maxUsers }} Staff Accounts</v-list-item>
                 </v-list>
               </div>
               <v-divider></v-divider>
               <v-card-actions class="pa-6">
-                <v-btn block outlined color="#D32F2F" class="text-none font-weight-bold" height="44" to="/register">
+                <v-btn v-if="index === 1" block color="#D32F2F" dark class="text-none font-weight-bold" height="44" to="/register">
                   Start Free Trial
                 </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-col>
-
-          <!-- Pro Plan -->
-          <v-col cols="12" md="5">
-            <v-card class="pricing-card featured-card" elevation="12">
-              <div class="featured-badge">MOST POPULAR</div>
-              <div class="pa-6">
-                <h3 class="text-h5 font-weight-bold mb-2">Pro</h3>
-                <div class="d-flex align-end mb-4">
-                  <span class="text-h3 font-weight-black">KES 3,000</span>
-                  <span class="text-subtitle-1 text-grey ml-2 mb-1">/month</span>
-                </div>
-                <p class="text-body-2 text-grey-darken-1 mb-6">For busy shops with multiple technicians and higher volume.</p>
-                <v-list dense class="transparent">
-                  <v-list-item class="px-0"><v-icon color="success" small class="mr-2">mdi-check</v-icon> Everything in Starter</v-list-item>
-                  <v-list-item class="px-0"><v-icon color="success" small class="mr-2">mdi-check</v-icon> Up to 5 Staff Accounts</v-list-item>
-                  <v-list-item class="px-0"><v-icon color="success" small class="mr-2">mdi-check</v-icon> SMS Customer Notifications</v-list-item>
-                  <v-list-item class="px-0"><v-icon color="success" small class="mr-2">mdi-check</v-icon> Daily Sales Reports</v-list-item>
-                </v-list>
-              </div>
-              <v-divider></v-divider>
-              <v-card-actions class="pa-6">
-                <v-btn block color="#D32F2F" dark class="text-none font-weight-bold" height="44" to="/register">
+                <v-btn v-else block outlined color="#D32F2F" class="text-none font-weight-bold" height="44" to="/register">
                   Start Free Trial
                 </v-btn>
               </v-card-actions>
@@ -294,7 +276,7 @@
           <v-expansion-panel>
             <v-expansion-panel-header class="font-weight-bold text-body-1">Can I add multiple staff members?</v-expansion-panel-header>
             <v-expansion-panel-content class="text-body-2 text-grey-darken-2">
-              Yes. The Pro plan allows you to add up to 5 staff accounts with different permission levels (Admin, Technician, Cashier). They each get their own secure login.
+              Yes. Our higher tier plans allow you to add staff accounts with different permission levels (Admin, Technician, Cashier). They each get their own secure login.
             </v-expansion-panel-content>
           </v-expansion-panel>
           <v-expansion-panel>
@@ -327,7 +309,27 @@
 
 <script>
 export default {
-  layout: 'blank'
+  layout: 'blank',
+  data() {
+    return {
+      plans: [] // Will hold the plans fetched from the database
+    }
+  },
+  async asyncData({ $axios }) {
+    try {
+      // Fetch plans during SSR so the page loads instantly with data
+      const plans = await $axios.$get('/api/billing/plans')
+      return { plans }
+    } catch (e) {
+      console.error('Failed to load plans', e)
+      return { plans: [] }
+    }
+  },
+  methods: {
+    formatMoney(val) {
+      return new Intl.NumberFormat('en-KE').format(val || 0)
+    }
+  }
 }
 </script>
 
@@ -335,7 +337,6 @@ export default {
 /* GLOBAL CSS */
 html {
   scroll-behavior: smooth;
-  /* Removed scroll-padding-top so it stops jumping too far */
 }
 
 .landing-page { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }

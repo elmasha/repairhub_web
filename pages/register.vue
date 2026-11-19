@@ -1,5 +1,4 @@
 <template>
-  <v-app>
     <v-container class="fill-height reg-bg" fluid>
       <v-row align="center" justify="center">
         <v-col cols="12" sm="10" md="7" lg="6" xl="5">
@@ -157,7 +156,7 @@
         </v-col>
       </v-row>
     </v-container>
-  </v-app>
+  
 </template>
 
 <script>

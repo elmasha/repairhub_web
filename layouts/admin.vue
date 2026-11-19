@@ -86,6 +86,7 @@ export default {
         { title: 'Businesses', to: '/admin/businesses', icon: 'mdi-store' },
         { title: 'Plans', to: '/admin/plans', icon: 'mdi-tag-multiple' },
         { title: 'Invoices', to: '/admin/invoices', icon: 'mdi-receipt' },
+        { title: 'Payments', to: '/admin/payments', icon: 'mdi-cash-multiple' },
         { title: 'Audit Log', to: '/admin/audit', icon: 'mdi-history' },
       ],
     }

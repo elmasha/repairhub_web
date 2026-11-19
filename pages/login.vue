@@ -1,96 +1,140 @@
 <template>
-  
-    <v-container class="fill-height login-bg" fluid>
-      <v-row align="center" justify="center">
-        <v-col cols="12" sm="8" md="4" lg="3">
-          <v-card class="elevation-12 login-card" outlined>
+  <v-app dark style="background: #0f1115;">
+    <v-container fluid class="fill-height pa-0 ma-0" style="height: 100vh;">
+      <v-row no-gutters class="fill-height ma-0">
+        
+        <!-- LEFT SIDE: Branding (Hidden on Mobile) -->
+        <v-col cols="12" md="5" class="d-none d-md-flex flex-column align-center justify-center red-gradient fill-height">
+          <div class="brand-content text-center px-8">
+            <div class="d-flex align-center justify-center mb-8">
+              <v-icon size="48" color="white" class="mr-3">mdi-tools</v-icon>
+              <h1 class="text-h3 font-weight-black white--text" style="letter-spacing: -1px;">RepairHub</h1>
+            </div>
+            
+            <h2 class="text-h4 font-weight-bold white--text mb-4 text-left">Welcome Back!</h2>
+            <p class="text-subtitle-1 white--text mb-10 text-left" style="opacity: 0.8;">
+              Sign in to manage your repairs, inventory, and sales.
+            </p>
 
-            <v-toolbar color="#121212" dark flat height="72">
-              <v-toolbar-title class="font-weight-bold text-h5">
-                <span class="brand-red">Repair</span>Hub POS
-              </v-toolbar-title>
-              <v-spacer></v-spacer>
-              <v-btn text color="white" to="/" class="text-none font-weight-medium">
-                <v-icon left small>mdi-arrow-left</v-icon> Home
+            <div class="mt-8 text-left">
+              <v-btn text color="white" to="/" class="text-none px-0">
+                <v-icon left>mdi-arrow-left</v-icon> Back to Home
               </v-btn>
-            </v-toolbar>
+            </div>
+          </div>
+        </v-col>
 
-            <v-card-text class="pt-8 px-6">
-              <div class="text-h6 font-weight-medium mb-1">Welcome back</div>
-              <div class="text-body-2 grey--text mb-6">Sign in to your workspace</div>
+        <!-- RIGHT SIDE: Login Form -->
+        <v-col cols="12" md="7" class="d-flex flex-column align-center justify-center dark-bg fill-height position-relative">
+          
+          <!-- MOBILE HEADER: Gradient & Branding (Hidden on Desktop) -->
+          <div class="mobile-hero d-md-none">
+            <div class="d-flex align-center mb-4">
+              <v-icon size="32" color="white" class="mr-2">mdi-tools</v-icon>
+              <span class="text-h5 font-weight-bold white--text">RepairHub</span>
+            </div>
+            <h2 class="text-h5 font-weight-bold white--text mb-1">Welcome Back!</h2>
+            <p class="text-body-2 white--text" style="opacity: 0.8;">Sign in to manage your workspace.</p>
+          </div>
 
-              <v-form ref="form" v-model="valid" @submit.prevent="handleLogin">
-                <v-text-field
-                  v-model.trim="email"
-                  label="Email Address"
-                  prepend-inner-icon="mdi-account-outline"
-                  type="email"
-                  autocomplete="username"
-                  color="primary"
-                  outlined
-                  :rules="[rules.required, rules.email]"
-                  :disabled="loading"
-                  @input="error = ''"
-                  @keyup.enter="handleLogin"
-                />
+          <!-- THE FORM -->
+          <div class="form-wrapper px-6 px-md-12" style="width: 100%; max-width: 450px;">
+            <div class="mb-8 text-center text-md-left d-none d-md-block">
+              <h2 class="text-h4 font-weight-bold white--text mb-2">Sign In</h2>
+              <p class="text-body-2 grey--text text--lighten-1">Enter your email and password to access your workspace.</p>
+            </div>
 
-                <v-text-field
-                  v-model="password"
-                  label="Password"
-                  prepend-inner-icon="mdi-lock-outline"
-                  :type="showPassword ? 'text' : 'password'"
-                  :append-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
-                  autocomplete="current-password"
-                  color="primary"
-                  outlined
-                  :rules="[rules.required]"
-                  :disabled="loading"
-                  @click:append="showPassword = !showPassword"
-                  @input="error = ''"
-                  @keyup.enter="handleLogin"
-                />
+            <v-form ref="form" v-model="valid" @submit.prevent="handleLogin">
+              
+              <v-text-field
+                v-model.trim="email"
+                label="Email Address"
+                placeholder="regan@gmail.com"
+                type="email"
+                autocomplete="username"
+                color="white"
+                outlined
+                :rules="[rules.required, rules.email]"
+                :disabled="loading"
+                class="custom-input mb-2"
+                @keyup.enter="handleLogin"
+              />
 
-                <v-alert
-                  v-if="error"
-                  type="error"
-                  dense
-                  outlined
-                  class="mt-2 text-left"
-                  transition="fade-transition"
-                >
-                  {{ error }}
-                </v-alert>
-              </v-form>
-            </v-card-text>
+              <v-text-field
+                v-model="password"
+                label="Password"
+                placeholder="••••••••"
+                :type="showPassword ? 'text' : 'password'"
+                :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                @click:append="showPassword = !showPassword"
+                autocomplete="current-password"
+                color="white"
+                outlined
+                :rules="[rules.required]"
+                :disabled="loading"
+                class="custom-input mb-2"
+                @keyup.enter="handleLogin"
+              />
 
-            <v-card-actions class="px-6 pb-6 pt-0">
+              <div class="d-flex justify-space-between align-center mb-6">
+                <v-checkbox
+                  v-model="rememberMe"
+                  label="Remember me"
+                  color="red"
+                  hide-details
+                  class="mt-0 pt-0 white--text"
+                ></v-checkbox>
+                
+                <NuxtLink to="/forgot-password" class="text-body-2 white--text text-decoration-none font-weight-medium">
+                  Forgot password?
+                </NuxtLink>
+              </div>
+
+              <v-alert
+                v-if="error"
+                type="error"
+                dense
+                outlined
+                class="mb-6 text-left"
+                color="red"
+              >
+                {{ error }}
+              </v-alert>
+
               <v-btn
                 color="#D32F2F"
                 block
-                large
+                x-large
                 depressed
                 class="white--text font-weight-bold"
+                style="border-radius: 8px; font-size: 1rem;"
                 :loading="loading"
                 :disabled="loading || !email || !password"
                 @click="handleLogin"
               >
-                LOGIN
+                Log In
               </v-btn>
-            </v-card-actions>
+            </v-form>
 
-            <v-divider />
-
-            <v-card-text class="text-center text-body-2 grey--text py-4">
-              Don't have an account?
-              <NuxtLink to="/register" class="brand-red font-weight-bold text-decoration-none ml-1">
+            <div class="text-center mt-8">
+              <span class="text-body-2 grey--text">Don't have an account?</span>
+              <NuxtLink to="/register" class="white--text font-weight-bold text-decoration-none ml-1">
                 Create one
               </NuxtLink>
-            </v-card-text>
-          </v-card>
+            </div>
+
+            <!-- Back to Home for Mobile -->
+            <div class="text-center mt-6 d-md-none">
+              <NuxtLink to="/" class="text-body-2 grey--text text-decoration-none">
+                <v-icon small left>mdi-arrow-left</v-icon> Back to Home
+              </NuxtLink>
+            </div>
+          </div>
         </v-col>
+
       </v-row>
     </v-container>
-  
+  </v-app>
 </template>
 
 <script>
@@ -101,6 +145,7 @@ export default {
       email: '',
       password: '',
       showPassword: false,
+      rememberMe: false,
       loading: false,
       error: '',
       valid: false,
@@ -146,19 +191,76 @@ export default {
 </script>
 
 <style scoped>
-.login-bg {
-  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+/* Left Side Gradient */
+.red-gradient {
+  background: linear-gradient(135deg, #C62828 0%, #7F0000 100%);
+  position: relative;
 }
-.login-card {
-  border-radius: 12px;
-  overflow: hidden;
+
+.brand-content {
+  max-width: 400px;
 }
-.brand-red {
-  color: #d32f2f;
+
+/* Right Side Dark Theme */
+.dark-bg {
+  background-color: #0f1115;
 }
-@media (max-width: 600px) {
-  .login-card {
-    margin: 16px 0;
+
+/* Custom Dark Inputs */
+.custom-input >>> .v-input__slot {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-radius: 8px !important;
+}
+
+.custom-input >>> .v-text-field__slot input {
+  color: white !important;
+}
+
+.custom-input >>> fieldset {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.custom-input.v-input--is-focused >>> fieldset {
+  border-color: #D32F2F !important;
+}
+
+/* Placeholder color */
+.custom-input >>> input::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Checkbox label color */
+.white--text >>> .v-label {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Fix to ensure full height across the whole page */
+html, body, #__nuxt, #__layout {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Mobile adjustments */
+@media (max-width: 960px) {
+  .mobile-hero {
+    width: 100%;
+    background: linear-gradient(135deg, #C62828 0%, #7F0000 100%);
+    padding: 40px 24px;
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    margin-bottom: 20px;
+  }
+  
+  .form-wrapper {
+    padding: 24px 16px;
+  }
+
+  .dark-bg {
+    background: radial-gradient(circle at top, rgba(211, 47, 47, 0.1) 0%, #0f1115 40%) !important;
+    justify-content: flex-start !important;
+    padding-top: 0 !important;
   }
 }
 </style>

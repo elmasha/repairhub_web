@@ -95,6 +95,7 @@
         <v-tab>Businesses</v-tab>
         <v-tab>Subscription Plans</v-tab>
         <v-tab>Invoices</v-tab>
+        <v-tab>Payments</v-tab>
       </v-tabs>
 
       <v-tabs-items v-model="activeTab">
@@ -286,9 +287,117 @@
             </div>
           </v-card>
         </v-tab-item>
+
+        <!-- Payments Tab -->
+        <v-tab-item>
+          <v-card outlined>
+            <!-- Summary row -->
+            <v-row class="ma-0 pa-4" style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+              <v-col cols="12" sm="6" md="4" class="py-2">
+                <div class="text-caption text-grey text-uppercase font-weight-bold">Total Collected</div>
+                <div class="text-h6 font-weight-black text-success">
+                  KES {{ formatMoney(paymentSummary.paidTotal) }}
+                </div>
+                <div class="text-caption text-grey">{{ paymentSummary.paidCount }} paid invoices</div>
+              </v-col>
+              <v-col cols="12" sm="6" md="4" class="py-2">
+                <div class="text-caption text-grey text-uppercase font-weight-bold">Pending</div>
+                <div class="text-h6 font-weight-black" style="color: #f59e0b;">
+                  KES {{ formatMoney(paymentSummary.pendingTotal) }}
+                </div>
+                <div class="text-caption text-grey">{{ paymentSummary.pendingCount }} awaiting review</div>
+              </v-col>
+              <v-col cols="12" md="4" class="py-2 d-flex align-center justify-end">
+                <v-btn small text color="primary" to="/admin/payments">
+                  <v-icon left small>mdi-open-in-new</v-icon> Full view
+                </v-btn>
+              </v-col>
+            </v-row>
+
+            <!-- Filters -->
+            <div class="d-flex flex-wrap align-center pa-4 border-bottom">
+              <v-text-field
+                v-model.trim="paymentSearch"
+                prepend-inner-icon="mdi-magnify"
+                label="Invoice # or M-Pesa ref..."
+                outlined dense clearable color="primary"
+                class="mr-3" style="max-width: 280px;"
+                @keyup.enter="paymentPage = 1; fetchPayments()"
+              />
+              <v-select
+                v-model="paymentStatusFilter"
+                :items="[{text:'All', value:null},{text:'Pending', value:'pending'},{text:'Paid', value:'paid'},{text:'Failed', value:'failed'}]"
+                item-text="text" item-value="value"
+                label="Status" outlined dense clearable color="primary"
+                style="max-width: 160px;"
+              />
+            </div>
+
+            <v-simple-table>
+              <thead>
+                <tr>
+                  <th class="text-left">Date</th>
+                  <th class="text-left">Business</th>
+                  <th class="text-left">Plan</th>
+                  <th class="text-left">Invoice #</th>
+                  <th class="text-left">Amount</th>
+                  <th class="text-left">Reference</th>
+                  <th class="text-left">Status</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in payments" :key="p.id">
+                  <td class="text-caption">{{ formatDate(p.createdAt) }}</td>
+                  <td>
+                    <div class="font-weight-bold">{{ p.businessName }}</div>
+                    <v-chip x-small :color="statusColor(p.businessStatus)" dark>
+                      {{ p.businessStatus }}
+                    </v-chip>
+                  </td>
+                  <td>{{ p.planName }}</td>
+                  <td class="text-caption">{{ p.invoiceNumber }}</td>
+                  <td class="font-weight-bold">KES {{ formatMoney(p.amountKes) }}</td>
+                  <td class="text-caption">{{ p.reference || p.externalId || '—' }}</td>
+                  <td>
+                    <v-chip x-small :color="paymentStatusColor(p.status)" dark>
+                      {{ p.status.toUpperCase() }}
+                    </v-chip>
+                  </td>
+                  <td class="text-right">
+                    <template v-if="p.status === 'pending'">
+                      <v-btn x-small color="success" class="mr-2" @click="openPayDialog(p)">Verify</v-btn>
+                      <v-btn x-small text color="error" @click="failInvoice(p)">Fail</v-btn>
+                    </template>
+                    <span v-else-if="p.status === 'paid'" class="text-caption text-grey">
+                      <v-icon small color="success">mdi-check-circle</v-icon> Paid
+                    </span>
+                    <span v-else class="text-caption text-grey">—</span>
+                  </td>
+                </tr>
+                <tr v-if="payments.length === 0 && !loadingPayments">
+                  <td colspan="8" class="text-center py-8 text-grey">
+                    <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-cash-multiple</v-icon>
+                    <div>No payments found.</div>
+                  </td>
+                </tr>
+              </tbody>
+            </v-simple-table>
+
+            <div v-if="paymentTotalPages > 1" class="d-flex justify-center py-4">
+              <v-pagination
+                v-model="paymentPage"
+                :length="paymentTotalPages"
+                :total-visible="7"
+                circle color="#D32F2F"
+                @input="fetchPayments"
+              />
+            </div>
+          </v-card>
+        </v-tab-item>
       </v-tabs-items>
 
-      <!-- Manage Tenant Dialog (FIXED from Drawer) -->
+      <!-- Manage Tenant Dialog -->
       <v-dialog v-model="drawer" max-width="500px" @click:outside="drawer = false">
         <v-card class="dialog-card" v-if="activeTenant">
           <div class="dialog-header">
@@ -299,7 +408,7 @@
             <v-btn icon small color="grey" @click="drawer = false"><v-icon>mdi-close</v-icon></v-btn>
           </div>
           <v-card-text class="pt-4" style="max-height: 70vh; overflow-y: auto;">
-            
+
             <v-btn
               block color="#D32F2F" dark small class="mb-6"
               :loading="impersonating"
@@ -310,7 +419,7 @@
 
             <v-divider class="my-4"></v-divider>
             <h4 class="font-weight-bold mb-3">Billing History</h4>
-            
+
             <v-list dense v-if="activeTenant.invoices && activeTenant.invoices.length > 0" class="mb-4">
               <v-list-item v-for="inv in activeTenant.invoices" :key="inv.id" class="px-0">
                 <v-list-item-content>
@@ -517,9 +626,21 @@ export default {
       invoiceTotal: 0,
       invoiceTotalPages: 1,
 
+      // Payments tab
+      payments: [],
+      paymentSearch: '',
+      paymentStatusFilter: null,
+      paymentPage: 1,
+      paymentPageSize: 20,
+      paymentTotal: 0,
+      paymentTotalPages: 1,
+      paymentSummary: { paidCount: 0, paidTotal: 0, pendingCount: 0, pendingTotal: 0 },
+      loadingPayments: false,
+      searchTimerPayments: null,
+
       activeTab: 0,
 
-      // Tenant dialog (renamed internally to drawer to save changing all refs)
+      // Tenant dialog
       drawer: false,
       activeTenant: null,
       impersonating: false,
@@ -558,6 +679,9 @@ export default {
     invoiceTotalPages() {
       return Math.max(1, Math.ceil(this.invoiceTotal / this.invoicePageSize))
     },
+    paymentTotalPages() {
+      return Math.max(1, Math.ceil(this.paymentTotal / this.paymentPageSize))
+    },
   },
 
   watch: {
@@ -575,6 +699,17 @@ export default {
     invoiceStatusFilter() {
       this.invoicePage = 1
       this.fetchInvoices()
+    },
+    paymentSearch() {
+      clearTimeout(this.searchTimerPayments)
+      this.searchTimerPayments = setTimeout(() => {
+        this.paymentPage = 1
+        this.fetchPayments()
+      }, 300)
+    },
+    paymentStatusFilter() {
+      this.paymentPage = 1
+      this.fetchPayments()
     },
     showAudit(val) {
       if (val && this.auditItems.length === 0) this.fetchAudit()
@@ -630,6 +765,8 @@ export default {
       this.businesses = []
       this.plans = []
       this.invoices = []
+      this.payments = []
+      this.paymentSummary = { paidCount: 0, paidTotal: 0, pendingCount: 0, pendingTotal: 0 }
       this.activeTenant = null
       this.drawer = false
     },
@@ -643,6 +780,7 @@ export default {
         this.fetchBusinesses(),
         this.fetchPlans(),
         this.fetchInvoices(),
+        this.fetchPayments(),
       ])
     },
 
@@ -704,6 +842,28 @@ export default {
       } catch (e) {
         if (e && e.response && e.response.status === 401) return this.logout()
         this.pageError = 'Failed to load invoices.'
+      }
+    },
+
+    async fetchPayments() {
+      this.loadingPayments = true
+      try {
+        const params = { page: this.paymentPage, pageSize: this.paymentPageSize }
+        if (this.paymentSearch) params.q = this.paymentSearch
+        if (this.paymentStatusFilter) params.status = this.paymentStatusFilter
+        const res = await this.$axios.$get('/api/system/payments', {
+          ...this.getHeaders(),
+          params,
+        })
+        this.payments = res.items || []
+        this.paymentSummary = res.summary || this.paymentSummary
+        this.paymentTotal = (res.pagination && res.pagination.total) || 0
+        this.paymentTotalPages = (res.pagination && res.pagination.totalPages) || 1
+      } catch (e) {
+        if (e && e.response && e.response.status === 401) return this.logout()
+        this.pageError = 'Failed to load payments.'
+      } finally {
+        this.loadingPayments = false
       }
     },
 
@@ -797,7 +957,7 @@ export default {
     // -------------------------------------------------------------------
     openPayDialog(inv) {
       this.payingInvoice = inv
-      this.payForm = { reference: '' }
+      this.payForm = { reference: inv.reference || '' }
       this.payFieldErrors = {}
       this.payDialog = true
     },
@@ -814,7 +974,11 @@ export default {
           this.getHeaders()
         )
         this.payDialog = false
-        await Promise.all([this.fetchInvoices(), this.fetchMetrics()])
+        await Promise.all([
+          this.fetchInvoices(),
+          this.fetchPayments(),
+          this.fetchMetrics(),
+        ])
       } catch (e) {
         const err = e && e.response && e.response.data && e.response.data.error
         if (err && err.fieldErrors) {
@@ -828,6 +992,21 @@ export default {
         }
       } finally {
         this.paying = false
+      }
+    },
+
+    async failInvoice(p) {
+      if (!confirm(`Mark invoice ${p.invoiceNumber} as failed? This does not affect the subscription.`)) return
+      try {
+        await this.$axios.$patch(
+          `/api/system/invoice/${p.id}/fail`,
+          { reason: 'Admin marked as failed' },
+          this.getHeaders()
+        )
+        await this.fetchPayments()
+      } catch (e) {
+        const err = e && e.response && e.response.data && e.response.data.error
+        this.pageError = typeof err === 'string' ? err : 'Failed to update invoice.'
       }
     },
 
@@ -927,13 +1106,18 @@ export default {
     statusColor(status) {
       if (status === 'SUSPENDED') return 'error'
       if (status === 'CANCELLED') return 'grey'
-      if (status === 'TRIAL') return 'warning' // Fixed trial color
+      if (status === 'TRIAL') return 'warning'
       return 'success'
     },
     invoiceStatusColor(status) {
       if (status === 'paid') return 'success'
       if (status === 'void') return 'grey'
       if (status === 'draft') return 'grey'
+      return 'warning'
+    },
+    paymentStatusColor(status) {
+      if (status === 'paid') return 'success'
+      if (status === 'failed') return 'error'
       return 'warning'
     },
     formatMoney(val) {

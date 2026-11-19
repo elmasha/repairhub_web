@@ -12,7 +12,7 @@ export default {
       { name: 'format-detection', content: 'telephone=no' },
       { name: 'robots', content: 'noindex,nofollow' }
     ],
-    link: [{ rel: 'icon', type: 'image/x-icon', href: '/' }]
+    link: [{ rel: 'icon', type: 'image/x-icon', href: '/icon.svg' }]
   },
 
   css: [],
@@ -20,16 +20,15 @@ export default {
   plugins: [
     '@/plugins/axios-jwt.js',
     '@/plugins/chart.js'
-    // Note: removed mapGoogle, directionsRenderer, axios-auth (Makaazi-only)
-    // If you *do* use Google Maps anywhere, uncomment mapGoogle below:
-    // '@/plugins/mapGoogle.client.js',
   ],
 
   router: {
   },
 
   env: {
-    API_BASE_URL: process.env.API_BASE_URL || 'https://repairhubserver-production.up.railway.app/api/v1'
+    API_BASE_URL: process.env.API_BASE_URL || 'https://repairhubserver-production.up.railway.app/api/v1',
+    // Add your IntaSend Publishable Key here so it's available in the browser
+    INTASEND_PUBLISHABLE_KEY: process.env.INTASEND_PUBLISHABLE_KEY
   },
 
   components: true,
@@ -52,7 +51,8 @@ export default {
   modules: [
     '@nuxtjs/axios',
     '@nuxtjs/dayjs',
-    'cookie-universal-nuxt', // <-- Add this
+    'cookie-universal-nuxt',
+    '@nuxtjs/proxy' // <-- Add the proxy module
   ],
 
   axios: {
@@ -60,20 +60,29 @@ export default {
     credentials: false
   },
 
+  // <-- Proxy configuration
+  proxy: {
+    '/intasend-api': {
+      target: 'https://api.intasend.com',
+      pathRewrite: { '^/intasend-api': '' },
+      changeOrigin: true
+    }
+  },
+
   vuetify: {
     customVariables: ['~/assets/variables.scss'],
     theme: {
-      dark: false, // <-- Force dark mode for the black background
+      dark: false,
       themes: {
         dark: {
-          primary: '#E53935',   // Strong Red
-          secondary: '#B71C1C', // Darker Red
-          accent: '#FF5252',    // Bright Red accent
+          primary: '#E53935',
+          secondary: '#B71C1C',
+          accent: '#FF5252',
           error: '#D32F2F',
           warning: '#FFA000',
           info: '#1976D2',
           success: '#388E3C',
-          background: '#121212' // Deep Black for Vuetify components
+          background: '#121212'
         }
       }
     }

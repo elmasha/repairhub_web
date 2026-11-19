@@ -1,7 +1,7 @@
 export const state = () => ({
   authToken: null,
   user: null,
-  subscription: null // <-- Needed for the lock to work
+  subscription: null // <-- ADDED: We need to track this
 })
 
 export const mutations = {
@@ -21,20 +21,23 @@ export const mutations = {
 }
 
 export const actions = {
-  async nuxtServerInit({ commit }, { app }) {
+  async nuxtServerInit({ commit, state }, { app }) {
     const token = app.$cookies.get('token')
     if (token) {
       try {
+        // Fetch the current user and subscription from the backend
         const res = await app.$axios.$get('/api/auth/me', {
           headers: { Authorization: `Bearer ${token}` }
         })
-        // res now contains { user, business, subscription }
+        
+        // res includes user and subscription based on our backend fix
         commit('SET_AUTH', { 
           token, 
-          user: res.user, 
-          subscription: res.subscription 
+          user: res.user || res, // Adjust based on how your /me endpoint returns data
+          subscription: res.subscription || (res.business ? res.business.subscription : null)
         })
       } catch (e) {
+        // Token is invalid or expired
         app.$cookies.remove('token')
         commit('CLEAR_AUTH')
       }
@@ -42,18 +45,27 @@ export const actions = {
   },
 
   async login({ commit }, { email, password }) {
-    const response = await this.$axios.$post('/api/auth/login', { email, password })
-    this.$cookies.set('token', response.accessToken, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
-      secure: process.env.NODE_ENV === 'production'
-    })
-    commit('SET_AUTH', { 
-      token: response.accessToken, 
-      user: response.user, 
-      subscription: response.subscription 
-    })
-    return response
+    try {
+      const response = await this.$axios.$post('/api/auth/login', { email, password })
+      
+      // Save the token to a cookie so it persists on refresh
+      this.$cookies.set('token', response.accessToken, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+        secure: process.env.NODE_ENV === 'production'
+      })
+      
+      // Save user AND subscription to Vuex
+      commit('SET_AUTH', { 
+        token: response.accessToken, 
+        user: response.user, 
+        subscription: response.subscription 
+      })
+      
+      return response
+    } catch (error) {
+      throw error
+    }
   },
   
   logout({ commit }) {

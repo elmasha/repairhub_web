@@ -7,10 +7,10 @@
         <p class="page-subtitle">Welcome back, here is what's happening today.</p>
       </div>
       <div class="action-buttons">
-        <v-btn class="btn-primary mr-3" to="/repairs" elevation="0" rounded>
+        <v-btn class="btn-primary mr-3" to="/repairs" elevation="0" rounded :disabled="billingDue">
           <v-icon left small>mdi-plus</v-icon> New Repair
         </v-btn>
-        <v-btn outlined class="btn-outline" to="/pos" elevation="0" rounded>
+        <v-btn outlined class="btn-outline" to="/pos" elevation="0" rounded :disabled="billingDue">
           <v-icon left small>mdi-cash-register</v-icon> Open POS
         </v-btn>
       </div>
@@ -29,7 +29,7 @@
         <v-icon left large class="mr-3">mdi-alert-octagon</v-icon>
         <div style="flex: 1;">
           <div class="font-weight-bold text-h6">Account Suspended</div>
-          <div>Your subscription is inactive. You can still view data, but new repairs and sales are disabled.</div>
+          <div>{{ billingMessage }} You can still view data, but new repairs and sales are disabled.</div>
         </div>
         <v-btn color="white" dark class="ml-4 text-none font-weight-bold" @click="openBillingDialog">
           Pay Now
@@ -45,7 +45,7 @@
       <!-- Stat Cards -->
       <v-row class="mb-4">
         <v-col cols="6" sm="6" md="3">
-          <v-card class="stat-card" elevation="0" to="/repairs">
+          <v-card class="stat-card" elevation="0" :to="billingDue ? null : '/repairs'" :style="billingDue ? 'opacity: 0.6; pointer-events: none;' : ''">
             <div class="stat-border bg-red" />
             <div class="stat-content">
               <div>
@@ -60,7 +60,7 @@
         </v-col>
 
         <v-col cols="6" sm="6" md="3">
-          <v-card class="stat-card" elevation="0" to="/payments">
+          <v-card class="stat-card" elevation="0" :to="billingDue ? null : '/payments'" :style="billingDue ? 'opacity: 0.6; pointer-events: none;' : ''">
             <div class="stat-border bg-green" />
             <div class="stat-content">
               <div>
@@ -75,7 +75,7 @@
         </v-col>
 
         <v-col cols="6" sm="6" md="3">
-          <v-card class="stat-card" elevation="0" to="/inventory">
+          <v-card class="stat-card" elevation="0" :to="billingDue ? null : '/inventory'" :style="billingDue ? 'opacity: 0.6; pointer-events: none;' : ''">
             <div class="stat-border bg-orange" />
             <div class="stat-content">
               <div>
@@ -90,7 +90,7 @@
         </v-col>
 
         <v-col cols="6" sm="6" md="3">
-          <v-card class="stat-card" elevation="0" to="/customers">
+          <v-card class="stat-card" elevation="0" :to="billingDue ? null : '/customers'" :style="billingDue ? 'opacity: 0.6; pointer-events: none;' : ''">
             <div class="stat-border bg-blue" />
             <div class="stat-content">
               <div>
@@ -115,13 +115,14 @@
                   <v-btn
                     block
                     class="action-tile"
-                    :to="action.to"
+                    :to="billingDue ? null : action.to"
                     elevation="0"
                     height="90"
+                    :disabled="billingDue"
                   >
                     <div class="d-flex flex-column align-center">
-                      <v-icon :color="action.color" size="32" class="mb-2">{{ action.icon }}</v-icon>
-                      <span class="action-text">{{ action.title }}</span>
+                      <v-icon :color="billingDue ? 'grey' : action.color" size="32" class="mb-2">{{ action.icon }}</v-icon>
+                      <span class="action-text" :style="billingDue ? 'color: grey;' : ''">{{ action.title }}</span>
                     </div>
                   </v-btn>
                 </v-col>
@@ -131,53 +132,18 @@
         </v-col>
       </v-row>
 
-      <!-- Sales Overview -->
-      <v-row class="mb-6">
-        <v-col cols="12">
-          <v-card class="sales-overview-card" elevation="0">
-            <div class="sales-header">
-              <v-icon color="#D32F2F" class="mr-2">mdi-chart-line</v-icon>
-              <span class="sales-title">Sales Overview</span>
-            </div>
-            <v-divider />
-            <div class="sales-grid">
-              <div class="sales-item">
-                <div class="sales-label">Today</div>
-                <div class="sales-value">KES {{ formatMoney(periodStats.today) }}</div>
-              </div>
-              <div class="sales-item">
-                <div class="sales-label">This Week</div>
-                <div class="sales-value">KES {{ formatMoney(periodStats.week) }}</div>
-              </div>
-              <div class="sales-item">
-                <div class="sales-label">This Month</div>
-                <div class="sales-value">KES {{ formatMoney(periodStats.month) }}</div>
-              </div>
-              <div class="sales-item">
-                <div class="sales-label">All Time Total</div>
-                <div class="sales-value" style="color: #D32F2F;">
-                  KES {{ formatMoney(periodStats.allTime) }}
-                </div>
-              </div>
-            </div>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- Main Content Row -->
+      <!-- Main Content Row (Recent Repairs & Low Stock) -->
       <v-row>
-        <!-- Recent Repairs -->
         <v-col cols="12" lg="8">
-          <v-card class="custom-card" elevation="0">
+          <v-card class="custom-card" elevation="0" :style="billingDue ? 'opacity: 0.6;' : ''">
             <v-card-title class="card-header">
               <span class="card-title-text">Recent Repairs</span>
               <v-spacer />
-              <v-btn text color="#D32F2F" class="font-weight-bold text-none" small to="/repairs">
+              <v-btn text color="#D32F2F" class="font-weight-bold text-none" small :to="billingDue ? null : '/repairs'" :disabled="billingDue">
                 View All <v-icon right small>mdi-arrow-right</v-icon>
               </v-btn>
             </v-card-title>
             <v-divider />
-
             <v-simple-table class="custom-table">
               <template v-slot:default>
                 <thead>
@@ -190,27 +156,18 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="repair in recentRepairs" :key="repair.id" class="repair-row" @click="$router.push('/repairs')">
+                  <tr v-for="repair in recentRepairs" :key="repair.id" class="repair-row" @click="!billingDue && $router.push('/repairs')">
                     <td class="font-weight-bold" style="color: #121212;">
                       {{ repair.ticketNumber || '#' + repair.id.slice(-4).toUpperCase() }}
                     </td>
-                    <td>
-                      <div class="font-weight-medium">{{ repair.customer?.name || '—' }}</div>
-                    </td>
+                    <td><div class="font-weight-medium">{{ repair.customer?.name || '—' }}</div></td>
                     <td>{{ repair.deviceBrand }} {{ repair.deviceModel }}</td>
                     <td>
-                      <v-chip
-                        :color="getStatusColor(repair.status)"
-                        x-small
-                        text-color="white"
-                        class="status-chip"
-                      >
+                      <v-chip :color="getStatusColor(repair.status)" x-small text-color="white" class="status-chip">
                         {{ formatStatus(repair.status) }}
                       </v-chip>
                     </td>
-                    <td class="text-right text-caption text-grey">
-                      {{ timeAgo(repair.createdAt) }}
-                    </td>
+                    <td class="text-right text-caption text-grey">{{ timeAgo(repair.createdAt) }}</td>
                   </tr>
                   <tr v-if="recentRepairs.length === 0">
                     <td colspan="5" class="text-center py-8 text-grey">
@@ -224,16 +181,14 @@
           </v-card>
         </v-col>
 
-        <!-- Low Stock Alerts -->
         <v-col cols="12" lg="4">
-          <v-card class="custom-card" elevation="0">
+          <v-card class="custom-card" elevation="0" :style="billingDue ? 'opacity: 0.6; pointer-events: none;' : ''">
             <v-card-title class="card-header">
               <span class="card-title-text">Low Stock Alerts</span>
               <v-spacer />
               <v-chip v-if="lowStockParts.length > 0" color="error" x-small dark>{{ lowStockParts.length }}</v-chip>
             </v-card-title>
             <v-divider />
-
             <v-list class="alert-list" dense>
               <v-list-item v-for="part in lowStockParts" :key="part.id" class="alert-item">
                 <v-list-item-icon>
@@ -245,15 +200,11 @@
                 </v-list-item-icon>
                 <v-list-item-content>
                   <v-list-item-title class="font-weight-bold">{{ part.name }}</v-list-item-title>
-                  <v-list-item-subtitle
-                    :class="part.quantity <= 2 ? 'text-error' : 'text-warning'"
-                    class="font-weight-bold text-caption"
-                  >
+                  <v-list-item-subtitle :class="part.quantity <= 2 ? 'text-error' : 'text-warning'" class="font-weight-bold text-caption">
                     Only {{ part.quantity }} left in stock
                   </v-list-item-subtitle>
                 </v-list-item-content>
               </v-list-item>
-
               <v-list-item v-if="lowStockParts.length === 0">
                 <v-list-item-content class="text-center text-grey py-8">
                   <v-icon color="success" size="40" class="mb-2">mdi-check-circle-outline</v-icon>
@@ -261,13 +212,6 @@
                 </v-list-item-content>
               </v-list-item>
             </v-list>
-
-            <v-divider />
-            <v-card-actions class="pa-3">
-              <v-btn block outlined color="#121212" class="font-weight-bold text-none" to="/inventory">
-                Manage Inventory
-              </v-btn>
-            </v-card-actions>
           </v-card>
         </v-col>
       </v-row>
@@ -278,7 +222,7 @@
       <v-card class="dialog-card">
         <div class="dialog-header bg-white">
           <h3 class="font-weight-bold">Renew Subscription</h3>
-          <v-btn icon small color="grey" @click="billingDialog = false"><v-icon>mdi-close</v-icon></v-btn>
+          <v-btn icon small color="grey" @click="closeBillingDialog"><v-icon>mdi-close</v-icon></v-btn>
         </div>
         
         <v-card-text class="pt-4">
@@ -334,8 +278,9 @@
         
         <v-card-actions class="px-6 pb-6">
           <v-spacer />
-          <v-btn text :disabled="processing" @click="billingDialog = false">Cancel</v-btn>
-          <v-btn class="btn-primary" :loading="processing" :disabled="!selectedPlan" @click="submitPayment">
+          <!-- Only allow closing if they aren't hard-locked (to force payment) -->
+          <v-btn text :disabled="processing || billingDue" @click="closeBillingDialog">Cancel</v-btn>
+          <v-btn class="btn-primary" :loading="processing" :disabled="!selectedPlan || !mpesaCode" @click="submitPayment">
             Confirm Payment
           </v-btn>
         </v-card-actions>
@@ -353,6 +298,7 @@ export default {
     return {
       loading: true,
       billingDue: false,
+      billingMessage: '',
       stats: { activeRepairs: 0, todaySales: 0, lowStock: 0, totalCustomers: 0 },
       periodStats: { today: 0, week: 0, month: 0, allTime: 0 },
       recentRepairs: [],
@@ -376,8 +322,14 @@ export default {
   },
 
   async mounted() {
-    await this.fetchDashboardData()
     await this.checkBilling()
+    await this.fetchDashboardData()
+    
+    if (this.billingDue) {
+      this.$nextTick(() => {
+        this.openBillingDialog()
+      })
+    }
   },
 
   methods: {
@@ -399,29 +351,35 @@ export default {
     async checkBilling() {
       try {
         const res = await this.$axios.$get('/api/billing/subscription')
-        
         if (!res) return
 
-        // 1. Check if status is inactive
-        const isInactiveStatus = res.status && !['ACTIVE', 'TRIAL'].includes(res.status)
-        
-        // 2. Check if trial has expired
-        const isTrialExpired = res.status === 'TRIAL' && res.trialEndsAt && new Date(res.trialEndsAt) < new Date()
+        const status = (res.status || '').toUpperCase()
+        const now = new Date()
 
-        if (isInactiveStatus || isTrialExpired) {
+        // 1. Inactive status
+        if (['SUSPENDED', 'CANCELLED', 'PAST_DUE'].includes(status)) {
           this.billingDue = true
-          
-          // Wait for the DOM to render, then open the dialog
-          this.$nextTick(() => {
-            this.openBillingDialog()
-          })
+          this.billingMessage = `Your account is ${status.toLowerCase()}. Please settle your billing.`
         }
+        
+        // 2. Trial Expired
+        if (status === 'TRIAL') {
+          if (!res.trialEndsAt || new Date(res.trialEndsAt) < now) {
+            this.billingDue = true
+            this.billingMessage = 'Your free trial has expired. Please upgrade to continue.'
+          }
+        }
+
+        // 3. Active but expired period
+        if (status === 'ACTIVE' && res.currentPeriodEnd && new Date(res.currentPeriodEnd) < now) {
+          this.billingDue = true
+          this.billingMessage = 'Your subscription has expired. Please renew to continue.'
+        }
+
       } catch (e) {
         if (e.response && e.response.status === 403) {
           this.billingDue = true
-          this.$nextTick(() => {
-            this.openBillingDialog()
-          })
+          this.billingMessage = 'Your account is restricted. Please check billing.'
         }
       }
     },
@@ -430,7 +388,6 @@ export default {
       this.billingDialog = true
       this.paymentError = ''
       this.mpesaCode = ''
-      this.selectedPlan = null
       
       if (this.plans.length === 0) {
         try {
@@ -440,6 +397,13 @@ export default {
           this.paymentError = 'Failed to load plans.'
         }
       }
+    },
+
+    closeBillingDialog() {
+      // If billing is due, you can force them to stay, or let them close
+      // Here we allow them to close but they'll be redirected if they try to navigate
+      if (this.processing) return
+      this.billingDialog = false
     },
 
     resetPaymentForm() {
@@ -452,6 +416,7 @@ export default {
         this.paymentError = 'Please enter a valid M-Pesa receipt code.'
         return
       }
+      
       this.processing = true
       this.paymentError = ''
       
@@ -464,8 +429,8 @@ export default {
         this.billingDialog = false
         alert('Payment submitted! We will verify your code and activate your account shortly.')
         
-        // Re-check billing status immediately
-        await this.checkBilling()
+        // Force the user to the billing page to verify the status
+        this.$router.push('/billing')
         
       } catch (e) {
         this.paymentError = e.response?.data?.error || 'Failed to submit payment.'

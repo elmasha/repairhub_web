@@ -90,7 +90,6 @@
                   <small class="text-grey-darken-1">{{ repair.customer?.phone || '—' }}</small>
                 </td>
                 <td>
-                  <!-- Clickable chip: pencil icon = editable, hover/focus = pressable -->
                   <v-chip
                     :color="getStatusColor(repair.status)"
                     small
@@ -561,8 +560,6 @@ export default {
       }))
     },
 
-    // Client-side filter + search over the loaded page.
-    // For large shops, move this to the API via ?q=&status= later.
     filteredRepairs() {
       const q = this.search.trim().toLowerCase()
       return this.repairs.filter(r => {
@@ -582,13 +579,6 @@ export default {
 
     totalPages() {
       return Math.max(1, Math.ceil(this.filteredRepairs.length / this.pageSize))
-    },
-
-    paginatedRepairs() {
-      // Not used in the template yet — see note below. Kept for parity with the
-      // server-side pattern; wire it in if you fetch all repairs at once.
-      const start = (this.page - 1) * this.pageSize
-      return this.filteredRepairs.slice(start, start + this.pageSize)
     },
 
     selectedPartQuantity() {
@@ -612,16 +602,24 @@ export default {
       this.loading = true
       this.pageError = ''
       try {
+        // Manually attach the token to prevent 401 errors
+        const token = this.$store.state.authToken
+        const config = {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+
         const [repairRes, customerRes, partRes] = await Promise.all([
-          this.$axios.$get('/api/repairs'),
-          this.$axios.$get('/api/customers', { params: { pageSize: 100 } }),
-          this.$axios.$get('/api/parts'),
+          this.$axios.$get('/api/repairs', config),
+          this.$axios.$get('/api/customers', { ...config, params: { pageSize: 100 } }),
+          this.$axios.$get('/api/parts', config),
         ])
-        this.repairs = repairRes.items
-        this.customers = customerRes.items
-        this.parts = partRes.items
+        
+        this.repairs = repairRes.items || repairRes
+        this.customers = customerRes.items || customerRes
+        this.parts = partRes.items || partRes
       } catch (e) {
-        this.pageError = 'Failed to load repair desk data.'
+        console.error(e)
+        this.pageError = 'Failed to load repair desk data. Please refresh.'
       } finally {
         this.loading = false
       }
@@ -629,8 +627,11 @@ export default {
 
     async refreshRepairs() {
       try {
-        const res = await this.$axios.$get('/api/repairs')
-        this.repairs = res.items
+        const token = this.$store.state.authToken
+        const res = await this.$axios.$get('/api/repairs', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        this.repairs = res.items || res
       } catch (e) {
         this.pageError = 'Failed to refresh repairs.'
       }
@@ -668,7 +669,10 @@ export default {
 
       this.savingIntake = true
       try {
-        await this.$axios.$post('/api/repairs', this.intakeForm)
+        const token = this.$store.state.authToken
+        await this.$axios.$post('/api/repairs', this.intakeForm, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
         this.intakeDialog = false
         this.notify('Ticket created')
         await this.refreshRepairs()
@@ -689,7 +693,10 @@ export default {
       this.paymentFieldErrors = {}
 
       try {
-        this.selectedRepair = await this.$axios.$get(`/api/repairs/${repair.id}`)
+        const token = this.$store.state.authToken
+        this.selectedRepair = await this.$axios.$get(`/api/repairs/${repair.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
       } catch (e) {
         this.actionDialog = false
         this.pageError = 'Failed to open repair.'
@@ -715,8 +722,13 @@ export default {
 
       this.addingPart = true
       try {
-        await this.$axios.$post(`/api/repairs/${this.selectedRepair.id}/parts`, this.partForm)
-        this.selectedRepair = await this.$axios.$get(`/api/repairs/${this.selectedRepair.id}`)
+        const token = this.$store.state.authToken
+        await this.$axios.$post(`/api/repairs/${this.selectedRepair.id}/parts`, this.partForm, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        this.selectedRepair = await this.$axios.$get(`/api/repairs/${this.selectedRepair.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
         this.partForm = { partId: null, quantity: 1 }
         this.notify('Part added')
         await this.refreshRepairs()
@@ -738,9 +750,11 @@ export default {
 
       this.savingPayment = true
       try {
+        const token = this.$store.state.authToken
         await this.$axios.$post(
           `/api/repairs/${this.selectedRepair.id}/payments`,
-          this.paymentForm
+          this.paymentForm,
+          { headers: { Authorization: `Bearer ${token}` } }
         )
         this.actionDialog = false
         this.notify('Payment recorded')
@@ -775,9 +789,12 @@ export default {
       const label = this.formatStatus(target)
 
       try {
+        const token = this.$store.state.authToken
         await this.$axios.$patch(`/api/repairs/${this.statusRepair.id}/status`, {
           status: target,
           note: this.statusForm.note || undefined,
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
         })
         this.statusDialog = false
         this.statusRepair = null

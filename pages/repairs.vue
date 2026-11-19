@@ -475,6 +475,28 @@
       </v-card>
     </v-dialog>
 
+        <!-- Upgrade Plan Dialog -->
+    <v-dialog v-model="showUpgradeDialog" max-width="400px">
+      <v-card class="dialog-card">
+        <div class="dialog-header" style="background: #FEF2F2;">
+          <h3 style="color: #D32F2F;">Plan Limit Reached</h3>
+          <v-btn icon small color="grey" @click="showUpgradeDialog = false"><v-icon>mdi-close</v-icon></v-btn>
+        </div>
+        <v-card-text class="pt-4 text-center">
+          <v-icon size="64" color="#D32F2F" class="mb-4">mdi-alert-circle-outline</v-icon>
+          <p class="text-body-1 font-weight-medium mb-2">{{ upgradeMessage }}</p>
+          <p class="text-caption text-grey">Upgrade your plan to continue creating repairs.</p>
+        </v-card-text>
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn text @click="showUpgradeDialog = false">Not now</v-btn>
+          <v-btn color="#D32F2F" dark to="/billing" @click="showUpgradeDialog = false">
+            Upgrade Plan
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Snackbar: lightweight success feedback -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" bottom timeout="2500">
       {{ snackbar.text }}
@@ -482,6 +504,8 @@
         <v-btn text v-bind="attrs" small @click="snackbar.show = false">OK</v-btn>
       </template>
     </v-snackbar>
+
+
   </div>
 </template>
 
@@ -489,6 +513,8 @@
 export default {
   data() {
     return {
+      showUpgradeDialog: false,
+      upgradeMessage: '',
       loading: true,
       savingIntake: false,
       addingPart: false,
@@ -657,7 +683,7 @@ export default {
       this.intakeDialog = false
     },
 
-    async saveIntake() {
+        async saveIntake() {
       if (this.savingIntake) return
       this.intakeError = ''
       this.intakeFieldErrors = {}
@@ -677,7 +703,17 @@ export default {
         this.notify('Ticket created')
         await this.refreshRepairs()
       } catch (err) {
-        this.intakeError = this.parseApiError(err, this.intakeFieldErrors)
+        // CATCH THE PLAN LIMIT ERROR HERE
+        const status = err.response?.status
+        const errorData = err.response?.data?.error
+        
+        if (status === 403 && typeof errorData === 'string' && errorData.includes('Plan limit')) {
+          this.intakeDialog = false // Close the intake dialog
+          this.upgradeMessage = errorData
+          this.showUpgradeDialog = true
+        } else {
+          this.intakeError = this.parseApiError(err, this.intakeFieldErrors)
+        }
       } finally {
         this.savingIntake = false
       }

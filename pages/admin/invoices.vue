@@ -15,81 +15,94 @@
     </v-alert>
 
     <v-card outlined>
-      <div class="d-flex flex-wrap align-center pa-4 border-bottom">
+      <!-- Filters and Add Button -->
+      <div class="d-flex flex-wrap align-center pa-4 border-bottom gap-2">
         <v-select
           v-model="statusFilter"
           :items="statusOptions"
           item-text="text" item-value="value"
           label="Status" outlined dense clearable
-          color="primary" style="max-width: 180px;"
+          color="primary" class="flex-grow-1 flex-sm-grow-0 mr-sm-2 mb-2 mb-sm-0"
+          style="max-width: 180px;"
         />
         <v-spacer />
-        <v-btn small color="#D32F2F" dark @click="openCreateDialog()">
+        <v-btn 
+          small color="#D32F2F" dark 
+          class="w-100 w-sm-auto mt-2 mt-sm-0" 
+          @click="openCreateDialog()"
+        >
           <v-icon left small>mdi-plus</v-icon> New Invoice
         </v-btn>
       </div>
 
-      <v-simple-table>
-        <thead>
-          <tr>
-            <th class="text-left">Invoice</th>
-            <th class="text-left">Business</th>
-            <th class="text-left">Amount</th>
-            <th class="text-left">Status</th>
-            <th class="text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="inv in invoices" :key="inv.id">
-            <td>
-              <div class="font-weight-bold">{{ inv.invoiceNumber || inv.id.slice(0, 8) }}</div>
-              <div class="text-caption text-grey">{{ formatDate(inv.createdAt) }}</div>
-            </td>
-            <td>
-              <div>{{ inv.business?.name || '—' }}</div>
-              <div class="text-caption text-grey">{{ inv.business?.email || '' }}</div>
-            </td>
-            <td>KES {{ formatMoney(inv.amountKes) }}</td>
-            <td>
-              <v-chip x-small :color="statusColor(inv.status)" dark>
-                {{ inv.status.toUpperCase() }}
-              </v-chip>
-            </td>
-            <td class="text-right">
-              <v-btn
-                v-if="inv.status !== 'paid'"
-                x-small color="primary" class="mr-2"
-                @click="emailInvoice(inv)"
-                :loading="inv.emailing"
-              >
-                <v-icon left x-small>mdi-email</v-icon> Email
-              </v-btn>
-              <v-btn
-                v-if="inv.status !== 'paid'"
-                x-small color="success"
-                @click="openPayDialog(inv)"
-              >
-                Mark Paid
-              </v-btn>
-              <span v-else class="text-caption text-grey font-weight-bold">
-                <v-icon small color="success">mdi-check-circle</v-icon> Paid
-              </span>
-            </td>
-          </tr>
-          <tr v-if="invoices.length === 0">
-            <td colspan="5" class="text-center py-8 text-grey">
-              <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-receipt</v-icon>
-              <div>No invoices found.</div>
-            </td>
-          </tr>
-        </tbody>
-      </v-simple-table>
+      <!-- Responsive Table -->
+      <div class="table-responsive">
+        <v-simple-table class="responsive-table">
+          <thead>
+            <tr>
+              <th class="text-left">Invoice</th>
+              <th class="text-left d-none d-sm-table-cell">Business</th>
+              <th class="text-left">Amount</th>
+              <th class="text-left">Status</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="inv in invoices" :key="inv.id">
+              <td>
+                <div class="font-weight-bold">{{ inv.invoiceNumber || inv.id.slice(0, 8) }}</div>
+                <div class="text-caption text-grey d-sm-none">{{ inv.business?.name || '—' }}</div>
+                <div class="text-caption text-grey">{{ formatDate(inv.createdAt) }}</div>
+              </td>
+              <td class="d-none d-sm-table-cell">
+                <div>{{ inv.business?.name || '—' }}</div>
+                <div class="text-caption text-grey">{{ inv.business?.email || '' }}</div>
+              </td>
+              <td class="font-weight-bold">KES {{ formatMoney(inv.amountKes) }}</td>
+              <td>
+                <v-chip x-small :color="statusColor(inv.status)" dark>
+                  {{ inv.status.toUpperCase() }}
+                </v-chip>
+              </td>
+              <td class="text-right">
+                <v-btn
+                  v-if="inv.status !== 'paid'"
+                  x-small color="primary" class="mr-1 px-2"
+                  @click="emailInvoice(inv)"
+                  :loading="inv.emailing"
+                >
+                  <span class="d-none d-sm-inline">Email</span>
+                  <v-icon small class="d-sm-none">mdi-email</v-icon>
+                </v-btn>
+                <v-btn
+                  v-if="inv.status !== 'paid'"
+                  x-small color="success"
+                  class="px-2"
+                  @click="openPayDialog(inv)"
+                >
+                  <span class="d-none d-sm-inline">Mark Paid</span>
+                  <v-icon small class="d-sm-none">mdi-check</v-icon>
+                </v-btn>
+                <span v-else class="text-caption text-grey font-weight-bold">
+                  <v-icon small color="success">mdi-check-circle</v-icon> Paid
+                </span>
+              </td>
+            </tr>
+            <tr v-if="invoices.length === 0">
+              <td colspan="5" class="text-center py-8 text-grey">
+                <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-receipt</v-icon>
+                <div>No invoices found.</div>
+              </td>
+            </tr>
+          </tbody>
+        </v-simple-table>
+      </div>
 
       <div v-if="totalPages > 1" class="d-flex justify-center py-4">
         <v-pagination
           v-model="page"
           :length="totalPages"
-          :total-visible="7"
+          :total-visible="5"
           circle color="#D32F2F"
           @input="fetchInvoices"
         />
@@ -367,6 +380,28 @@ export default {
 </script>
 
 <style scoped>
+/* Responsive Tables */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table >>> th {
+  font-size: 0.75rem !important;
+  text-transform: uppercase;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  background-color: #f8fafc !important;
+  white-space: nowrap;
+}
+
+.responsive-table >>> td {
+  font-size: 0.85rem !important;
+  vertical-align: middle !important;
+}
+
+/* Dialog styles */
 .dialog-card { border-radius: 16px !important; }
 .dialog-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -377,5 +412,12 @@ export default {
   background-color: #D32F2F !important; color: white !important;
   font-weight: 600 !important; text-transform: none !important;
   border-radius: 8px !important;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .gap-2 { gap: 8px; }
+  .w-100 { width: 100% !important; }
+  .responsive-table >>> table { min-width: 500px; }
 }
 </style>

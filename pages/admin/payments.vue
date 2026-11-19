@@ -5,32 +5,34 @@
     <v-alert v-if="pageSuccess" type="success" dense outlined class="mb-4 text-left"
       dismissible @input="pageSuccess = ''">{{ pageSuccess }}</v-alert>
 
-    <!-- Summary cards -->
+    <!-- Summary cards (Grid on Mobile) -->
     <v-row class="mb-4">
-      <v-col cols="12" md="4">
+      <v-col cols="6" sm="6" md="4">
         <v-card outlined class="summary-card" style="border-left: 4px solid #10b981;">
           <div class="summary-label">Total Collected</div>
           <div class="summary-value text-success">KES {{ formatMoney(summary.paidTotal) }}</div>
-          <div class="summary-caption">{{ summary.paidCount }} paid invoices</div>
+          <div class="summary-caption d-none d-sm-block">{{ summary.paidCount }} paid invoices</div>
         </v-card>
       </v-col>
-      <v-col cols="12" md="4">
+      <v-col cols="6" sm="6" md="4">
         <v-card outlined class="summary-card" style="border-left: 4px solid #f59e0b;">
-          <div class="summary-label">Pending Verification</div>
+          <div class="summary-label">Pending</div>
           <div class="summary-value" style="color: #f59e0b;">KES {{ formatMoney(summary.pendingTotal) }}</div>
-          <div class="summary-caption">{{ summary.pendingCount }} awaiting review</div>
+          <div class="summary-caption d-none d-sm-block">{{ summary.pendingCount }} awaiting review</div>
         </v-card>
       </v-col>
     </v-row>
 
     <v-card outlined>
-      <div class="d-flex flex-wrap align-center pa-4 border-bottom">
+      <!-- Filters (Wrap on mobile) -->
+      <div class="d-flex flex-wrap align-center pa-4 border-bottom gap-2">
         <v-text-field
           v-model.trim="filters.q"
           label="Invoice # / M-Pesa ref"
           prepend-inner-icon="mdi-magnify"
           outlined dense clearable color="primary"
-          class="mr-3" style="max-width: 280px;"
+          class="flex-grow-1 mb-2 mb-sm-0"
+          style="max-width: 280px;"
           @keyup.enter="applyFilters"
         />
         <v-select
@@ -38,75 +40,87 @@
           :items="statusOptions"
           item-text="text" item-value="value"
           label="Status" outlined dense clearable color="primary"
-          class="mr-3" style="max-width: 160px;"
+          class="mr-2 mb-2 mb-sm-0" style="max-width: 160px;"
         />
         <v-select
           v-model="filters.method"
           :items="methodOptions"
           item-text="text" item-value="value"
           label="Method" outlined dense clearable color="primary"
-          class="mr-3" style="max-width: 160px;"
+          class="mr-2 mb-2 mb-sm-0" style="max-width: 160px;"
         />
-        <v-spacer />
-        <v-btn small text color="primary" @click="resetFilters">Reset</v-btn>
-        <v-btn small color="#D32F2F" dark @click="applyFilters">Apply</v-btn>
+        <v-spacer class="hidden-xs-only" />
+        <div class="d-flex w-100 justify-end mt-2 mt-sm-0">
+          <v-btn small text color="primary" class="mr-2" @click="resetFilters">Reset</v-btn>
+          <v-btn small color="#D32F2F" dark @click="applyFilters">Apply</v-btn>
+        </div>
       </div>
 
-      <v-simple-table>
-        <thead>
-          <tr>
-            <th class="text-left">Date</th>
-            <th class="text-left">Business</th>
-            <th class="text-left">Plan</th>
-            <th class="text-left">Invoice #</th>
-            <th class="text-left">Amount</th>
-            <th class="text-left">Method</th>
-            <th class="text-left">Reference</th>
-            <th class="text-left">Status</th>
-            <th class="text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="p in items" :key="p.id">
-            <td class="text-caption">{{ formatDateTime(p.createdAt) }}</td>
-            <td>
-              <div class="font-weight-bold">{{ p.businessName }}</div>
-              <v-chip x-small :color="businessStatusColor(p.businessStatus)" dark>
-                {{ p.businessStatus }}
-              </v-chip>
-            </td>
-            <td>{{ p.planName }}</td>
-            <td class="text-caption">{{ p.invoiceNumber }}</td>
-            <td class="font-weight-bold">KES {{ formatMoney(p.amountKes) }}</td>
-            <td class="text-caption">{{ p.method || '—' }}</td>
-            <td class="text-caption">{{ p.reference || p.externalId || '—' }}</td>
-            <td>
-              <v-chip x-small :color="statusColor(p.status)" dark>
-                {{ p.status.toUpperCase() }}
-              </v-chip>
-            </td>
-            <td class="text-right">
-              <template v-if="p.status === 'pending'">
-                <v-btn x-small color="success" class="mr-2" @click="openPayDialog(p)">Verify</v-btn>
-                <v-btn x-small text color="error" @click="failInvoice(p)">Fail</v-btn>
-              </template>
-              <span v-else-if="p.status === 'paid'" class="text-caption text-grey">
-                <v-icon small color="success">mdi-check-circle</v-icon> Paid
-              </span>
-              <span v-else class="text-caption text-grey">—</span>
-            </td>
-          </tr>
-          <tr v-if="items.length === 0 && !loading">
-            <td colspan="9" class="text-center py-8 text-grey">
-              <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-cash-multiple</v-icon>
-              <div>No payments match the filters.</div>
-            </td>
-          </tr>
-        </tbody>
-      </v-simple-table>
+      <!-- Responsive Table -->
+      <div class="table-responsive">
+        <v-simple-table>
+          <thead>
+            <tr>
+              <th class="text-left">Date</th>
+              <th class="text-left">Business</th>
+              <th class="text-left d-none d-sm-table-cell">Plan</th>
+              <th class="text-left d-none d-sm-table-cell">Invoice #</th>
+              <th class="text-left">Amount</th>
+              <th class="text-left d-none d-sm-table-cell">Method</th>
+              <th class="text-left d-none d-sm-table-cell">Reference</th>
+              <th class="text-left">Status</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="p in items" :key="p.id">
+              <td class="text-caption">{{ formatDateTime(p.createdAt) }}</td>
+              <td>
+                <div class="font-weight-bold">{{ p.businessName }}</div>
+                <div class="text-caption text-grey d-sm-none">{{ p.invoiceNumber }}</div>
+                <v-chip x-small :color="businessStatusColor(p.businessStatus)" dark class="mt-1">
+                  {{ p.businessStatus }}
+                </v-chip>
+              </td>
+              <td class="d-none d-sm-table-cell">{{ p.planName }}</td>
+              <td class="text-caption d-none d-sm-table-cell">{{ p.invoiceNumber }}</td>
+              <td class="font-weight-bold">KES {{ formatMoney(p.amountKes) }}</td>
+              <td class="text-caption d-none d-sm-table-cell">{{ p.method || '—' }}</td>
+              <td class="text-caption d-none d-sm-table-cell">{{ p.reference || p.externalId || '—' }}</td>
+              <td>
+                <v-chip x-small :color="statusColor(p.status)" dark>
+                  {{ p.status.toUpperCase() }}
+                </v-chip>
+              </td>
+              <td class="text-right">
+                <template v-if="p.status === 'pending'">
+                  <v-btn x-small color="success" class="mr-1 px-2" @click="openPayDialog(p)">
+                    <span class="d-none d-sm-inline">Verify</span>
+                    <v-icon small class="d-sm-none">mdi-check</v-icon>
+                  </v-btn>
+                  <v-btn x-small text color="error" class="px-2" @click="failInvoice(p)">
+                    <span class="d-none d-sm-inline">Fail</span>
+                    <v-icon small class="d-sm-none">mdi-close</v-icon>
+                  </v-btn>
+                </template>
+                <span v-else-if="p.status === 'paid'" class="text-caption text-grey">
+                  <v-icon small color="success">mdi-check-circle</v-icon> Paid
+                </span>
+                <span v-else class="text-caption text-grey">—</span>
+              </td>
+            </tr>
+            <tr v-if="items.length === 0 && !loading">
+              <td colspan="9" class="text-center py-8 text-grey">
+                <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-cash-multiple</v-icon>
+                <div>No payments match the filters.</div>
+              </td>
+            </tr>
+          </tbody>
+        </v-simple-table>
+      </div>
 
       <div v-if="totalPages > 1" class="d-flex justify-center py-4">
-        <v-pagination v-model="page" :length="totalPages" :total-visible="7"
+        <v-pagination v-model="page" :length="totalPages" :total-visible="5"
           circle color="#D32F2F" @input="fetchPayments" />
       </div>
     </v-card>
@@ -297,6 +311,14 @@ export default {
 .summary-caption { font-size: 0.75rem; color: #94a3b8; }
 .text-success { color: #10b981 !important; }
 
+/* Responsive Tables */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Dialog styles */
 .dialog-card { border-radius: 16px !important; }
 .dialog-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -306,5 +328,12 @@ export default {
 .btn-primary {
   background-color: #D32F2F !important; color: white !important;
   font-weight: 600 !important; text-transform: none !important; border-radius: 8px !important;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .summary-value { font-size: 1.4rem; }
+  .gap-2 { gap: 8px; }
+  .responsive-table >>> table { min-width: 700px; }
 }
 </style>

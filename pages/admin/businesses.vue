@@ -8,13 +8,14 @@
     </v-alert>
 
     <v-card outlined>
-      <div class="d-flex flex-wrap align-center pa-4 border-bottom">
+      <!-- Filters -->
+      <div class="d-flex flex-wrap align-center pa-4 border-bottom gap-2">
         <v-text-field
           v-model.trim="search"
           prepend-inner-icon="mdi-magnify"
           label="Search by name or owner email..."
           outlined dense clearable
-          color="primary" class="flex-grow-1 mr-3"
+          color="primary" class="flex-grow-1 mb-2 mb-sm-0"
           style="max-width: 380px;"
         />
         <v-select
@@ -26,54 +27,65 @@
         />
       </div>
 
-      <v-simple-table>
-        <thead>
-          <tr>
-            <th class="text-left">Business</th>
-            <th class="text-left">Plan</th>
-            <th class="text-left">Status</th>
-            <th class="text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="b in businesses" :key="b.id">
-            <td>
-              <div class="font-weight-bold">{{ b.name }}</div>
-              <div class="text-caption text-grey">{{ b.email || b.users?.[0]?.email || '—' }}</div>
-            </td>
-            <td>
-              <v-chip x-small color="primary">
-                {{ b.subscription?.plan?.name || 'None' }}
-              </v-chip>
-            </td>
-            <td>
-              <v-chip x-small :color="statusColor(b.status)" dark>{{ b.status }}</v-chip>
-            </td>
-            <td class="text-right">
-              <v-btn x-small color="info" class="mr-2" @click="viewTenant(b)">Manage</v-btn>
-              <v-btn
-                x-small
-                :color="b.status === 'SUSPENDED' ? 'success' : 'error'"
-                @click="toggleStatus(b)"
-              >
-                {{ b.status === 'SUSPENDED' ? 'Activate' : 'Deactivate' }}
-              </v-btn>
-            </td>
-          </tr>
-          <tr v-if="businesses.length === 0 && !loading">
-            <td colspan="4" class="text-center py-8 text-grey">
-              <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-store-off</v-icon>
-              <div>{{ search ? 'No businesses match your search.' : 'No businesses yet.' }}</div>
-            </td>
-          </tr>
-        </tbody>
-      </v-simple-table>
+      <!-- Responsive Table -->
+      <div class="table-responsive">
+        <v-simple-table class="responsive-table">
+          <thead>
+            <tr>
+              <th class="text-left">Business</th>
+              <th class="text-left d-none d-sm-table-cell">Plan</th>
+              <th class="text-left">Status</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="b in businesses" :key="b.id">
+              <td>
+                <div class="font-weight-bold">{{ b.name }}</div>
+                <div class="text-caption text-grey">{{ b.email || b.users?.[0]?.email || '—' }}</div>
+                <v-chip x-small color="primary" class="d-sm-none mt-1">
+                  {{ b.subscription?.plan?.name || 'None' }}
+                </v-chip>
+              </td>
+              <td class="d-none d-sm-table-cell">
+                <v-chip x-small color="primary">
+                  {{ b.subscription?.plan?.name || 'None' }}
+                </v-chip>
+              </td>
+              <td>
+                <v-chip x-small :color="statusColor(b.status)" dark>{{ b.status }}</v-chip>
+              </td>
+              <td class="text-right">
+                <v-btn x-small color="info" class="mr-1 px-2" @click="viewTenant(b)">
+                  <span class="d-none d-sm-inline">Manage</span>
+                  <v-icon small class="d-sm-none">mdi-cog</v-icon>
+                </v-btn>
+                <v-btn
+                  x-small
+                  :color="b.status === 'SUSPENDED' ? 'success' : 'error'"
+                  class="px-2"
+                  @click="toggleStatus(b)"
+                >
+                  <span class="d-none d-sm-inline">{{ b.status === 'SUSPENDED' ? 'Activate' : 'Deactivate' }}</span>
+                  <v-icon small class="d-sm-none">{{ b.status === 'SUSPENDED' ? 'mdi-lock-open' : 'mdi-lock' }}</v-icon>
+                </v-btn>
+              </td>
+            </tr>
+            <tr v-if="businesses.length === 0 && !loading">
+              <td colspan="4" class="text-center py-8 text-grey">
+                <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-store-off</v-icon>
+                <div>{{ search ? 'No businesses match your search.' : 'No businesses yet.' }}</div>
+              </td>
+            </tr>
+          </tbody>
+        </v-simple-table>
+      </div>
 
       <div v-if="totalPages > 1" class="d-flex justify-center py-4">
         <v-pagination
           v-model="page"
           :length="totalPages"
-          :total-visible="7"
+          :total-visible="5"
           circle color="#D32F2F"
           @input="fetchBusinesses"
         />
@@ -119,8 +131,8 @@
                   <span class="font-weight-bold" :class="inv.status === 'paid' ? 'success--text' : 'error--text'">
                     {{ inv.status.toUpperCase() }}
                   </span>
-                  <div v-if="inv.reference || inv.paymentReference" class="text-caption mt-1">
-                    M-Pesa Code: <strong>{{ inv.reference || inv.paymentReference }}</strong>
+                  <div v-if="inv.reference" class="text-caption mt-1">
+                    M-Pesa Code: <strong>{{ inv.reference }}</strong>
                   </div>
                 </v-list-item-subtitle>
               </v-list-item-content>
@@ -211,14 +223,12 @@ export default {
       searchTimer: null,
       pageError: '',
 
-      // Tenant Manage Dialog
       drawer: false,
       activeTenant: null,
       impersonating: false,
       extendDays: 7,
       extending: false,
 
-      // Pay Invoice Dialog
       payDialog: false,
       payingInvoice: null,
       paying: false,
@@ -386,7 +396,7 @@ export default {
     statusColor(status) {
       if (status === 'SUSPENDED') return 'error'
       if (status === 'CANCELLED') return 'grey'
-      if (status === 'TRIAL') return 'warning' // Added: Orange for trials
+      if (status === 'TRIAL') return 'warning'
       return 'success'
     },
     formatMoney(val) {
@@ -403,6 +413,28 @@ export default {
 </script>
 
 <style scoped>
+/* Responsive Tables */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table >>> th {
+  font-size: 0.75rem !important;
+  text-transform: uppercase;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  background-color: #f8fafc !important;
+  white-space: nowrap;
+}
+
+.responsive-table >>> td {
+  font-size: 0.85rem !important;
+  vertical-align: middle !important;
+}
+
+/* Dialog styles */
 .dialog-card { border-radius: 16px !important; }
 .dialog-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -413,5 +445,11 @@ export default {
   background-color: #D32F2F !important; color: white !important;
   font-weight: 600 !important; text-transform: none !important;
   border-radius: 8px !important;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .gap-2 { gap: 8px; }
+  .responsive-table >>> table { min-width: 500px; }
 }
 </style>

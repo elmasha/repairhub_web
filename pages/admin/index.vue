@@ -36,7 +36,7 @@
       </v-card>
     </div>
 
-    <!-- Dashboard — inside default layout -->
+    <!-- Dashboard -->
     <template v-else>
       <div class="header-section">
         <div>
@@ -44,8 +44,11 @@
           <p class="page-subtitle">Global overview of all RepairHub tenants.</p>
         </div>
         <div class="d-flex align-center">
-          <v-btn text small color="primary" class="mr-2" @click="showAudit = true">
+          <v-btn text small color="primary" class="mr-2 hidden-xs-only" @click="showAudit = true">
             <v-icon left small>mdi-history</v-icon> Audit Log
+          </v-btn>
+          <v-btn text small color="primary" class="mr-2 d-sm-none" @click="showAudit = true">
+            <v-icon small>mdi-history</v-icon>
           </v-btn>
           <v-btn text color="error" @click="logout">Logout</v-btn>
         </div>
@@ -58,42 +61,42 @@
         {{ pageError }}
       </v-alert>
 
-      <!-- Metrics -->
-      <v-row class="mb-4">
-        <v-col cols="12" sm="6" md="3">
+      <!-- Metrics (Grid on Mobile) -->
+      <v-row class="mb-6">
+        <v-col cols="6" sm="6" md="3">
           <v-card outlined class="stat-card" style="border-left: 4px solid #10b981;">
-            <div class="stat-label">Platform MRR (Your Income)</div>
+            <div class="stat-label">Platform MRR</div>
             <div class="stat-value text-success">KES {{ formatMoney(stats.platformMRR) }}</div>
-            <div class="stat-caption">Recurring monthly revenue</div>
+            <div class="stat-caption d-none d-sm-block">Recurring monthly revenue</div>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="6" md="3">
+        <v-col cols="6" sm="6" md="3">
           <v-card outlined class="stat-card" style="border-left: 4px solid #3b82f6;">
             <div class="stat-label">Total Invoiced</div>
             <div class="stat-value text-primary">KES {{ formatMoney(stats.totalInvoiced) }}</div>
-            <div class="stat-caption">Actual money collected</div>
+            <div class="stat-caption d-none d-sm-block">Actual money collected</div>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="6" md="3">
+        <v-col cols="6" sm="6" md="3">
           <v-card outlined class="stat-card" style="border-left: 4px solid #8b5cf6;">
             <div class="stat-label">Merchant Volume</div>
             <div class="stat-value">KES {{ formatMoney(stats.totalMerchantRevenue) }}</div>
-            <div class="stat-caption">Processed by your tenants</div>
+            <div class="stat-caption d-none d-sm-block">Processed by your tenants</div>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="6" md="3">
+        <v-col cols="6" sm="6" md="3">
           <v-card outlined class="stat-card" style="border-left: 4px solid #f59e0b;">
             <div class="stat-label">Total Businesses</div>
             <div class="stat-value">{{ stats.totalBusinesses }}</div>
-            <div class="stat-caption">Shops on the platform</div>
+            <div class="stat-caption d-none d-sm-block">Shops on the platform</div>
           </v-card>
         </v-col>
       </v-row>
 
       <!-- Tabs -->
-      <v-tabs v-model="activeTab" background-color="transparent" color="#D32F2F" class="mb-4">
+      <v-tabs v-model="activeTab" background-color="transparent" color="#D32F2F" class="mb-4" show-arrows>
         <v-tab>Businesses</v-tab>
-        <v-tab>Subscription Plans</v-tab>
+        <v-tab>Plans</v-tab>
         <v-tab>Invoices</v-tab>
         <v-tab>Payments</v-tab>
       </v-tabs>
@@ -108,7 +111,7 @@
                 prepend-inner-icon="mdi-magnify"
                 label="Search by name or owner email..."
                 outlined dense clearable
-                color="primary" class="flex-grow-1 mr-3"
+                color="primary" class="flex-grow-1 mr-2 mb-2 mb-sm-0"
                 style="max-width: 380px;"
               />
               <v-select
@@ -120,54 +123,65 @@
               />
             </div>
 
-            <v-simple-table>
-              <thead>
-                <tr>
-                  <th class="text-left">Business</th>
-                  <th class="text-left">Plan</th>
-                  <th class="text-left">Status</th>
-                  <th class="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="b in businesses" :key="b.id">
-                  <td>
-                    <div class="font-weight-bold">{{ b.name }}</div>
-                    <div class="text-caption text-grey">{{ b.email || b.users?.[0]?.email || '—' }}</div>
-                  </td>
-                  <td>
-                    <v-chip x-small color="primary">
-                      {{ b.subscription?.plan?.name || 'None' }}
-                    </v-chip>
-                  </td>
-                  <td>
-                    <v-chip x-small :color="statusColor(b.status)" dark>{{ b.status }}</v-chip>
-                  </td>
-                  <td class="text-right">
-                    <v-btn x-small color="info" class="mr-2" @click="viewTenant(b)">Manage</v-btn>
-                    <v-btn
-                      x-small
-                      :color="b.status === 'SUSPENDED' ? 'success' : 'error'"
-                      @click="toggleStatus(b)"
-                    >
-                      {{ b.status === 'SUSPENDED' ? 'Activate' : 'Deactivate' }}
-                    </v-btn>
-                  </td>
-                </tr>
-                <tr v-if="businesses.length === 0 && !loadingBusinesses">
-                  <td colspan="4" class="text-center py-8 text-grey">
-                    <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-store-off</v-icon>
-                    <div>{{ businessSearch ? 'No businesses match your search.' : 'No businesses yet.' }}</div>
-                  </td>
-                </tr>
-              </tbody>
-            </v-simple-table>
+            <!-- Responsive Table Wrapper -->
+            <div class="table-responsive">
+              <v-simple-table class="responsive-table">
+                <thead>
+                  <tr>
+                    <th class="text-left">Business</th>
+                    <th class="text-left d-none d-sm-table-cell">Plan</th>
+                    <th class="text-left">Status</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="b in businesses" :key="b.id">
+                    <td>
+                      <div class="font-weight-bold">{{ b.name }}</div>
+                      <div class="text-caption text-grey">{{ b.email || b.users?.[0]?.email || '—' }}</div>
+                      <v-chip x-small color="primary" class="d-sm-none mt-1">
+                        {{ b.subscription?.plan?.name || 'None' }}
+                      </v-chip>
+                    </td>
+                    <td class="d-none d-sm-table-cell">
+                      <v-chip x-small color="primary">
+                        {{ b.subscription?.plan?.name || 'None' }}
+                      </v-chip>
+                    </td>
+                    <td>
+                      <v-chip x-small :color="statusColor(b.status)" dark>{{ b.status }}</v-chip>
+                    </td>
+                    <td class="text-right">
+                      <v-btn x-small color="info" class="mr-1 px-2" @click="viewTenant(b)">
+                        <span class="d-none d-sm-inline">Manage</span>
+                        <v-icon small class="d-sm-none">mdi-cog</v-icon>
+                      </v-btn>
+                      <v-btn
+                        x-small
+                        :color="b.status === 'SUSPENDED' ? 'success' : 'error'"
+                        class="px-2"
+                        @click="toggleStatus(b)"
+                      >
+                        <span class="d-none d-sm-inline">{{ b.status === 'SUSPENDED' ? 'Activate' : 'Deactivate' }}</span>
+                        <v-icon small class="d-sm-none">{{ b.status === 'SUSPENDED' ? 'mdi-lock-open' : 'mdi-lock' }}</v-icon>
+                      </v-btn>
+                    </td>
+                  </tr>
+                  <tr v-if="businesses.length === 0 && !loadingBusinesses">
+                    <td colspan="4" class="text-center py-8 text-grey">
+                      <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-store-off</v-icon>
+                      <div>{{ businessSearch ? 'No businesses match your search.' : 'No businesses yet.' }}</div>
+                    </td>
+                  </tr>
+                </tbody>
+              </v-simple-table>
+            </div>
 
             <div v-if="businessTotalPages > 1" class="d-flex justify-center py-4">
               <v-pagination
                 v-model="businessPage"
                 :length="businessTotalPages"
-                :total-visible="7"
+                :total-visible="5"
                 circle color="#D32F2F"
                 @input="fetchBusinesses"
               />
@@ -184,41 +198,46 @@
                 <v-icon left small>mdi-plus</v-icon> Add Plan
               </v-btn>
             </div>
-            <v-simple-table>
-              <thead>
-                <tr>
-                  <th class="text-left">Plan Name</th>
-                  <th class="text-left">Code</th>
-                  <th class="text-left">Price (KES)</th>
-                  <th class="text-left">Limits</th>
-                  <th class="text-left">Status</th>
-                  <th class="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="p in plans" :key="p.id">
-                  <td class="font-weight-bold">{{ p.name }}</td>
-                  <td class="text-caption text-grey">{{ p.code }}</td>
-                  <td>{{ formatMoney(p.priceKes) }}</td>
-                  <td class="text-caption">
-                    {{ p.maxBranches }} Branch · {{ p.maxUsers }} Users · {{ p.maxRepairs || '∞' }} Repairs
-                  </td>
-                  <td>
-                    <v-chip x-small :color="p.isActive ? 'success' : 'grey'" dark>
-                      {{ p.isActive ? 'ACTIVE' : 'HIDDEN' }}
-                    </v-chip>
-                  </td>
-                  <td class="text-right">
-                    <v-btn icon x-small color="primary" class="mr-2" @click="openPlanDialog(p)">
-                      <v-icon small>mdi-pencil</v-icon>
-                    </v-btn>
-                    <v-btn icon x-small color="error" @click="deletePlan(p)">
-                      <v-icon small>mdi-delete</v-icon>
-                    </v-btn>
-                  </td>
-                </tr>
-              </tbody>
-            </v-simple-table>
+            <div class="table-responsive">
+              <v-simple-table>
+                <thead>
+                  <tr>
+                    <th class="text-left">Plan Name</th>
+                    <th class="text-left d-none d-sm-table-cell">Code</th>
+                    <th class="text-left">Price (KES)</th>
+                    <th class="text-left d-none d-sm-table-cell">Limits</th>
+                    <th class="text-left d-none d-sm-table-cell">Status</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="p in plans" :key="p.id">
+                    <td>
+                      <div class="font-weight-bold">{{ p.name }}</div>
+                      <div class="text-caption text-grey d-sm-none">{{ p.maxRepairs || '∞' }} repairs</div>
+                    </td>
+                    <td class="text-caption text-grey d-none d-sm-table-cell">{{ p.code }}</td>
+                    <td>{{ formatMoney(p.priceKes) }}</td>
+                    <td class="text-caption d-none d-sm-table-cell">
+                      {{ p.maxBranches }} Branch · {{ p.maxUsers }} Users · {{ p.maxRepairs || '∞' }} Repairs
+                    </td>
+                    <td class="d-none d-sm-table-cell">
+                      <v-chip x-small :color="p.isActive ? 'success' : 'grey'" dark>
+                        {{ p.isActive ? 'ACTIVE' : 'HIDDEN' }}
+                      </v-chip>
+                    </td>
+                    <td class="text-right">
+                      <v-btn icon x-small color="primary" class="mr-1" @click="openPlanDialog(p)">
+                        <v-icon small>mdi-pencil</v-icon>
+                      </v-btn>
+                      <v-btn icon x-small color="error" @click="deletePlan(p)">
+                        <v-icon small>mdi-delete</v-icon>
+                      </v-btn>
+                    </td>
+                  </tr>
+                </tbody>
+              </v-simple-table>
+            </div>
           </v-card>
         </v-tab-item>
 
@@ -234,53 +253,56 @@
                 color="primary" style="max-width: 180px;"
               />
             </div>
-            <v-simple-table>
-              <thead>
-                <tr>
-                  <th class="text-left">Invoice</th>
-                  <th class="text-left">Business</th>
-                  <th class="text-left">Amount</th>
-                  <th class="text-left">Status</th>
-                  <th class="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="inv in invoices" :key="inv.id">
-                  <td>
-                    <div class="font-weight-bold">{{ inv.invoiceNumber || inv.id.slice(0, 8) }}</div>
-                    <div class="text-caption text-grey">{{ formatDate(inv.createdAt) }}</div>
-                  </td>
-                  <td>{{ inv.business?.name || '—' }}</td>
-                  <td>KES {{ formatMoney(inv.amountKes) }}</td>
-                  <td>
-                    <v-chip x-small :color="invoiceStatusColor(inv.status)" dark>
-                      {{ inv.status.toUpperCase() }}
-                    </v-chip>
-                  </td>
-                  <td class="text-right">
-                    <v-btn
-                      v-if="inv.status !== 'paid'"
-                      x-small color="success"
-                      @click="openPayDialog(inv)"
-                    >
-                      Mark Paid
-                    </v-btn>
-                    <span v-else class="text-caption text-grey">Verified</span>
-                  </td>
-                </tr>
-                <tr v-if="invoices.length === 0">
-                  <td colspan="5" class="text-center py-8 text-grey">
-                    <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-receipt</v-icon>
-                    <div>No invoices found.</div>
-                  </td>
-                </tr>
-              </tbody>
-            </v-simple-table>
+            <div class="table-responsive">
+              <v-simple-table>
+                <thead>
+                  <tr>
+                    <th class="text-left">Invoice</th>
+                    <th class="text-left d-none d-sm-table-cell">Business</th>
+                    <th class="text-left">Amount</th>
+                    <th class="text-left">Status</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="inv in invoices" :key="inv.id">
+                    <td>
+                      <div class="font-weight-bold">{{ inv.invoiceNumber || inv.id.slice(0, 8) }}</div>
+                      <div class="text-caption text-grey d-sm-none">{{ inv.business?.name || '—' }}</div>
+                      <div class="text-caption text-grey">{{ formatDate(inv.createdAt) }}</div>
+                    </td>
+                    <td class="d-none d-sm-table-cell">{{ inv.business?.name || '—' }}</td>
+                    <td>KES {{ formatMoney(inv.amountKes) }}</td>
+                    <td>
+                      <v-chip x-small :color="invoiceStatusColor(inv.status)" dark>
+                        {{ inv.status.toUpperCase() }}
+                      </v-chip>
+                    </td>
+                    <td class="text-right">
+                      <v-btn
+                        v-if="inv.status !== 'paid'"
+                        x-small color="success"
+                        @click="openPayDialog(inv)"
+                      >
+                        Mark Paid
+                      </v-btn>
+                      <span v-else class="text-caption text-grey">Verified</span>
+                    </td>
+                  </tr>
+                  <tr v-if="invoices.length === 0">
+                    <td colspan="5" class="text-center py-8 text-grey">
+                      <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-receipt</v-icon>
+                      <div>No invoices found.</div>
+                    </td>
+                  </tr>
+                </tbody>
+              </v-simple-table>
+            </div>
             <div v-if="invoiceTotalPages > 1" class="d-flex justify-center py-4">
               <v-pagination
                 v-model="invoicePage"
                 :length="invoiceTotalPages"
-                :total-visible="7"
+                :total-visible="5"
                 circle color="#D32F2F"
                 @input="fetchInvoices"
               />
@@ -291,37 +313,35 @@
         <!-- Payments Tab -->
         <v-tab-item>
           <v-card outlined>
-            <!-- Summary row -->
             <v-row class="ma-0 pa-4" style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-              <v-col cols="12" sm="6" md="4" class="py-2">
+              <v-col cols="6" md="4" class="py-2">
                 <div class="text-caption text-grey text-uppercase font-weight-bold">Total Collected</div>
                 <div class="text-h6 font-weight-black text-success">
                   KES {{ formatMoney(paymentSummary.paidTotal) }}
                 </div>
-                <div class="text-caption text-grey">{{ paymentSummary.paidCount }} paid invoices</div>
+                <div class="text-caption text-grey">{{ paymentSummary.paidCount }} paid</div>
               </v-col>
-              <v-col cols="12" sm="6" md="4" class="py-2">
+              <v-col cols="6" md="4" class="py-2">
                 <div class="text-caption text-grey text-uppercase font-weight-bold">Pending</div>
                 <div class="text-h6 font-weight-black" style="color: #f59e0b;">
                   KES {{ formatMoney(paymentSummary.pendingTotal) }}
                 </div>
-                <div class="text-caption text-grey">{{ paymentSummary.pendingCount }} awaiting review</div>
+                <div class="text-caption text-grey">{{ paymentSummary.pendingCount }} awaiting</div>
               </v-col>
-              <v-col cols="12" md="4" class="py-2 d-flex align-center justify-end">
+              <v-col cols="12" md="4" class="py-2 d-none d-md-flex align-center justify-end">
                 <v-btn small text color="primary" to="/admin/payments">
                   <v-icon left small>mdi-open-in-new</v-icon> Full view
                 </v-btn>
               </v-col>
             </v-row>
 
-            <!-- Filters -->
             <div class="d-flex flex-wrap align-center pa-4 border-bottom">
               <v-text-field
                 v-model.trim="paymentSearch"
                 prepend-inner-icon="mdi-magnify"
                 label="Invoice # or M-Pesa ref..."
                 outlined dense clearable color="primary"
-                class="mr-3" style="max-width: 280px;"
+                class="mr-2 mb-2 mb-sm-0 flex-grow-1" style="max-width: 280px;"
                 @keyup.enter="paymentPage = 1; fetchPayments()"
               />
               <v-select
@@ -333,62 +353,71 @@
               />
             </div>
 
-            <v-simple-table>
-              <thead>
-                <tr>
-                  <th class="text-left">Date</th>
-                  <th class="text-left">Business</th>
-                  <th class="text-left">Plan</th>
-                  <th class="text-left">Invoice #</th>
-                  <th class="text-left">Amount</th>
-                  <th class="text-left">Reference</th>
-                  <th class="text-left">Status</th>
-                  <th class="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="p in payments" :key="p.id">
-                  <td class="text-caption">{{ formatDate(p.createdAt) }}</td>
-                  <td>
-                    <div class="font-weight-bold">{{ p.businessName }}</div>
-                    <v-chip x-small :color="statusColor(p.businessStatus)" dark>
-                      {{ p.businessStatus }}
-                    </v-chip>
-                  </td>
-                  <td>{{ p.planName }}</td>
-                  <td class="text-caption">{{ p.invoiceNumber }}</td>
-                  <td class="font-weight-bold">KES {{ formatMoney(p.amountKes) }}</td>
-                  <td class="text-caption">{{ p.reference || p.externalId || '—' }}</td>
-                  <td>
-                    <v-chip x-small :color="paymentStatusColor(p.status)" dark>
-                      {{ p.status.toUpperCase() }}
-                    </v-chip>
-                  </td>
-                  <td class="text-right">
-                    <template v-if="p.status === 'pending'">
-                      <v-btn x-small color="success" class="mr-2" @click="openPayDialog(p)">Verify</v-btn>
-                      <v-btn x-small text color="error" @click="failInvoice(p)">Fail</v-btn>
-                    </template>
-                    <span v-else-if="p.status === 'paid'" class="text-caption text-grey">
-                      <v-icon small color="success">mdi-check-circle</v-icon> Paid
-                    </span>
-                    <span v-else class="text-caption text-grey">—</span>
-                  </td>
-                </tr>
-                <tr v-if="payments.length === 0 && !loadingPayments">
-                  <td colspan="8" class="text-center py-8 text-grey">
-                    <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-cash-multiple</v-icon>
-                    <div>No payments found.</div>
-                  </td>
-                </tr>
-              </tbody>
-            </v-simple-table>
+            <div class="table-responsive">
+              <v-simple-table>
+                <thead>
+                  <tr>
+                    <th class="text-left d-none d-sm-table-cell">Date</th>
+                    <th class="text-left">Business</th>
+                    <th class="text-left d-none d-sm-table-cell">Plan</th>
+                    <th class="text-left d-none d-sm-table-cell">Invoice #</th>
+                    <th class="text-left">Amount</th>
+                    <th class="text-left d-none d-sm-table-cell">Reference</th>
+                    <th class="text-left">Status</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="p in payments" :key="p.id">
+                    <td class="text-caption d-none d-sm-table-cell">{{ formatDate(p.createdAt) }}</td>
+                    <td>
+                      <div class="font-weight-bold">{{ p.businessName }}</div>
+                      <div class="text-caption text-grey d-sm-none">{{ formatDate(p.createdAt) }} · {{ p.invoiceNumber }}</div>
+                      <v-chip x-small :color="statusColor(p.businessStatus)" dark class="mt-1">
+                        {{ p.businessStatus }}
+                      </v-chip>
+                    </td>
+                    <td class="d-none d-sm-table-cell">{{ p.planName }}</td>
+                    <td class="text-caption d-none d-sm-table-cell">{{ p.invoiceNumber }}</td>
+                    <td class="font-weight-bold">KES {{ formatMoney(p.amountKes) }}</td>
+                    <td class="text-caption d-none d-sm-table-cell">{{ p.reference || p.externalId || '—' }}</td>
+                    <td>
+                      <v-chip x-small :color="paymentStatusColor(p.status)" dark>
+                        {{ p.status.toUpperCase() }}
+                      </v-chip>
+                    </td>
+                    <td class="text-right">
+                      <template v-if="p.status === 'pending'">
+                        <v-btn x-small color="success" class="mr-1 px-2" @click="openPayDialog(p)">
+                          <span class="d-none d-sm-inline">Verify</span>
+                          <v-icon small class="d-sm-none">mdi-check</v-icon>
+                        </v-btn>
+                        <v-btn x-small text color="error" class="px-2" @click="failInvoice(p)">
+                          <span class="d-none d-sm-inline">Fail</span>
+                          <v-icon small class="d-sm-none">mdi-close</v-icon>
+                        </v-btn>
+                      </template>
+                      <span v-else-if="p.status === 'paid'" class="text-caption text-grey">
+                        <v-icon small color="success">mdi-check-circle</v-icon> Paid
+                      </span>
+                      <span v-else class="text-caption text-grey">—</span>
+                    </td>
+                  </tr>
+                  <tr v-if="payments.length === 0 && !loadingPayments">
+                    <td colspan="8" class="text-center py-8 text-grey">
+                      <v-icon size="48" color="grey lighten-2" class="mb-2">mdi-cash-multiple</v-icon>
+                      <div>No payments found.</div>
+                    </td>
+                  </tr>
+                </tbody>
+              </v-simple-table>
+            </div>
 
             <div v-if="paymentTotalPages > 1" class="d-flex justify-center py-4">
               <v-pagination
                 v-model="paymentPage"
                 :length="paymentTotalPages"
-                :total-visible="7"
+                :total-visible="5"
                 circle color="#D32F2F"
                 @input="fetchPayments"
               />
@@ -605,7 +634,6 @@ export default {
         totalInvoiced: 0,
       },
 
-      // Businesses tab
       businesses: [],
       businessSearch: '',
       businessStatusFilter: null,
@@ -615,10 +643,8 @@ export default {
       loadingBusinesses: false,
       searchTimer: null,
 
-      // Plans
       plans: [],
 
-      // Invoices tab
       invoices: [],
       invoiceStatusFilter: null,
       invoicePage: 1,
@@ -626,7 +652,6 @@ export default {
       invoiceTotal: 0,
       invoiceTotalPages: 1,
 
-      // Payments tab
       payments: [],
       paymentSearch: '',
       paymentStatusFilter: null,
@@ -640,14 +665,12 @@ export default {
 
       activeTab: 0,
 
-      // Tenant dialog
       drawer: false,
       activeTenant: null,
       impersonating: false,
       extendDays: 7,
       extending: false,
 
-      // Plan dialog
       planDialog: false,
       editingPlan: null,
       savingPlan: false,
@@ -658,14 +681,12 @@ export default {
         maxBranches: 1, maxUsers: 1, maxRepairs: null, isActive: true,
       },
 
-      // Pay dialog
       payDialog: false,
       payingInvoice: null,
       paying: false,
       payFieldErrors: {},
       payForm: { reference: '' },
 
-      // Audit dialog
       showAudit: false,
       auditItems: [],
       auditLoading: false,
@@ -726,9 +747,6 @@ export default {
       return { headers: { Authorization: `Bearer ${this.token}` } }
     },
 
-    // -------------------------------------------------------------------
-    // Auth
-    // -------------------------------------------------------------------
     async login() {
       this.loginError = ''
       if (!this.email || !this.password) {
@@ -771,9 +789,6 @@ export default {
       this.drawer = false
     },
 
-    // -------------------------------------------------------------------
-    // Data fetch
-    // -------------------------------------------------------------------
     async fetchAll() {
       await Promise.all([
         this.fetchMetrics(),
@@ -867,9 +882,6 @@ export default {
       }
     },
 
-    // -------------------------------------------------------------------
-    // Tenant dialog
-    // -------------------------------------------------------------------
     async viewTenant(b) {
       this.pageError = ''
       try {
@@ -952,9 +964,6 @@ export default {
       }
     },
 
-    // -------------------------------------------------------------------
-    // Invoices
-    // -------------------------------------------------------------------
     openPayDialog(inv) {
       this.payingInvoice = inv
       this.payForm = { reference: inv.reference || '' }
@@ -1010,9 +1019,6 @@ export default {
       }
     },
 
-    // -------------------------------------------------------------------
-    // Plans
-    // -------------------------------------------------------------------
     openPlanDialog(plan) {
       this.editingPlan = plan || null
       this.planError = ''
@@ -1082,9 +1088,6 @@ export default {
       }
     },
 
-    // -------------------------------------------------------------------
-    // Audit
-    // -------------------------------------------------------------------
     async fetchAudit() {
       this.auditLoading = true
       try {
@@ -1100,9 +1103,6 @@ export default {
       }
     },
 
-    // -------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------
     statusColor(status) {
       if (status === 'SUSPENDED') return 'error'
       if (status === 'CANCELLED') return 'grey'
@@ -1136,7 +1136,7 @@ export default {
 <style scoped>
 .admin-page { padding: 24px; font-family: 'Inter', sans-serif; }
 
-/* Login overlay covers the default layout (sidebar + topbar) until authenticated */
+/* Login overlay covers the default layout until authenticated */
 .login-overlay {
   position: fixed;
   inset: 0;
@@ -1151,35 +1151,77 @@ export default {
 
 .header-section {
   display: flex; justify-content: space-between; align-items: flex-end;
-  margin-bottom: 24px;
+  margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
 }
 .page-title { font-size: 1.75rem; font-weight: 800; margin: 0; color: #0f172a; }
 .page-subtitle { color: #64748b; margin: 0; font-size: 0.95rem; }
 
-.stat-card { padding: 20px; border-radius: 8px; height: 100%; }
+/* Stat Cards Grid */
+.stat-card { padding: 16px 20px; border-radius: 8px; height: 100%; transition: transform 0.2s; }
+.stat-card:hover { transform: translateY(-2px); }
 .stat-label {
-  font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
   color: #64748b; letter-spacing: 0.5px;
 }
 .stat-value {
-  font-size: 2rem; font-weight: 900; color: #0f172a;
-  margin-top: 8px; letter-spacing: -1px;
+  font-size: 1.6rem; font-weight: 900; color: #0f172a;
+  margin-top: 4px; letter-spacing: -0.5px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
 }
 .stat-caption { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; font-weight: 500; }
 .text-success { color: #10b981 !important; }
 .text-primary { color: #3b82f6 !important; }
 
+/* Dialog styling */
 .dialog-card { border-radius: 16px !important; }
 .dialog-header {
   display: flex; justify-content: space-between; align-items: center;
   padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;
 }
 .dialog-header h3 { margin: 0; font-weight: 800; font-size: 1.2rem; color: #0f172a; }
-
 .btn-primary {
   background-color: #D32F2F !important; color: white !important;
   font-weight: 600 !important; text-transform: none !important;
   border-radius: 8px !important; letter-spacing: 0 !important;
 }
 .btn-primary:hover { background-color: #B71C1C !important; }
+
+/* Responsive Tables */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table >>> th {
+  font-size: 0.75rem !important;
+  text-transform: uppercase;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  background-color: #f8fafc !important;
+  white-space: nowrap;
+}
+.responsive-table >>> td {
+  font-size: 0.85rem !important;
+  vertical-align: middle !important;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 600px) {
+  .admin-page { padding: 12px; }
+  
+  /* Ensure tables don't squeeze too much */
+  .responsive-table >>> table {
+    min-width: 600px;
+  }
+
+  .stat-value { font-size: 1.3rem; }
+  .stat-card { padding: 12px; }
+  .stat-label { font-size: 0.65rem; }
+  
+  /* Scrollable tabs for mobile */
+  .v-tabs-bar {
+    overflow-x: auto !important;
+  }
+}
 </style>

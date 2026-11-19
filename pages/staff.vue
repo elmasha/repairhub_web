@@ -114,6 +114,28 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+        <!-- Upgrade Plan Dialog -->
+    <v-dialog v-model="showUpgradeDialog" max-width="400px">
+      <v-card class="dialog-card">
+        <div class="dialog-header" style="background: #FEF2F2;">
+          <h3 style="color: #D32F2F;">Plan Limit Reached</h3>
+          <v-btn icon small color="grey" @click="showUpgradeDialog = false"><v-icon>mdi-close</v-icon></v-btn>
+        </div>
+        <v-card-text class="pt-4 text-center">
+          <v-icon size="64" color="#D32F2F" class="mb-4">mdi-account-alert</v-icon>
+          <p class="text-body-1 font-weight-medium mb-2">{{ upgradeMessage }}</p>
+          <p class="text-caption text-grey">Upgrade your plan to add more staff members.</p>
+        </v-card-text>
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn text @click="showUpgradeDialog = false">Not now</v-btn>
+          <v-btn color="#D32F2F" dark to="/billing" @click="showUpgradeDialog = false">
+            Upgrade Plan
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -124,6 +146,8 @@ export default {
   
   data() {
     return {
+      showUpgradeDialog: false,
+      upgradeMessage: '',
       dialog: false,
       loading: true,
       saving: false,
@@ -163,7 +187,7 @@ export default {
       this.dialog = true
     },
 
-    async saveStaff() {
+        async saveStaff() {
       if (!this.form.name || !this.form.email || !this.form.password) {
         this.error = 'Name, Email, and Password are required.'
         return
@@ -177,7 +201,17 @@ export default {
         this.dialog = false
         await this.fetchStaff()
       } catch (err) {
-        this.error = err.response?.data?.error || 'Failed to save staff.'
+        // CATCH THE PLAN LIMIT ERROR HERE
+        const status = err.response?.status
+        const errorData = err.response?.data?.error
+
+        if (status === 403 && typeof errorData === 'string' && errorData.includes('Plan limit')) {
+          this.dialog = false // Close the add staff dialog
+          this.upgradeMessage = errorData
+          this.showUpgradeDialog = true
+        } else {
+          this.error = errorData || 'Failed to save staff.'
+        }
       } finally {
         this.saving = false
       }

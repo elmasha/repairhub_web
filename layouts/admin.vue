@@ -55,23 +55,59 @@
 
     <!-- Admin topbar -->
     <v-app-bar app flat color="#ffffff" height="64" class="admin-appbar">
-      <v-app-bar-nav-icon @click="mini = !mini" />
+      <v-app-bar-nav-icon @click="mini = !mini" class="hidden-sm-and-down" />
+      <v-app-bar-nav-icon @click.stop="drawer = !drawer" class="hidden-md-and-up" />
+      
       <v-toolbar-title class="text-body-1 font-weight-bold" style="color:#0f172a;">
         {{ pageTitle }}
       </v-toolbar-title>
       <v-spacer />
-      <v-chip small outlined color="#D32F2F" class="mr-3">
+      <v-chip small outlined color="#D32F2F" class="mr-3 hidden-xs-only">
         <v-icon left x-small>mdi-shield-check</v-icon>
         Super Admin
       </v-chip>
     </v-app-bar>
 
     <!-- Content -->
-    <v-main style="background:#f8fafc;">
+    <v-main style="background:#f8fafc;" class="pb-16">
       <v-container fluid class="pa-6">
         <nuxt />
       </v-container>
     </v-main>
+
+    <!-- ADMIN BOTTOM NAVIGATION (MOBILE ONLY) -->
+    <v-bottom-navigation
+      app
+      fixed
+      background-color="#0f172a"
+      class="hidden-md-and-up bottom-nav"
+      height="64"
+    >
+      <v-btn to="/admin" exact class="bottom-btn">
+        <v-icon color="white" size="22">mdi-view-dashboard</v-icon>
+      </v-btn>
+
+      <v-btn to="/admin/businesses" class="bottom-btn">
+        <v-icon color="white" size="22">mdi-store</v-icon>
+      </v-btn>
+
+      <v-btn to="/admin/plans" class="bottom-btn">
+        <v-icon color="white" size="22">mdi-tag-multiple</v-icon>
+      </v-btn>
+
+      <!-- REPLACED: mdi-receipt -> mdi-file-document-outline -->
+      <v-btn to="/admin/invoices" class="bottom-btn">
+        <v-icon color="white" size="22">mdi-file-document-outline</v-icon>
+      </v-btn>
+
+      <v-btn to="/admin/payments" class="bottom-btn">
+        <v-icon color="white" size="22">mdi-wallet</v-icon>
+      </v-btn>
+
+      <v-btn to="/admin/audit" class="bottom-btn">
+        <v-icon color="white" size="22">mdi-history</v-icon>
+      </v-btn>
+    </v-bottom-navigation>
   </v-app>
 </template>
 
@@ -85,8 +121,9 @@ export default {
         { title: 'Overview', to: '/admin', icon: 'mdi-view-dashboard' },
         { title: 'Businesses', to: '/admin/businesses', icon: 'mdi-store' },
         { title: 'Plans', to: '/admin/plans', icon: 'mdi-tag-multiple' },
-        { title: 'Invoices', to: '/admin/invoices', icon: 'mdi-receipt' },
-        { title: 'Payments', to: '/admin/payments', icon: 'mdi-cash-multiple' },
+        // REPLACED: mdi-receipt -> mdi-file-document-outline
+        { title: 'Invoices', to: '/admin/invoices', icon: 'mdi-file-document-outline' },
+        { title: 'Payments', to: '/admin/payments', icon: 'mdi-wallet' }, 
         { title: 'Audit Log', to: '/admin/audit', icon: 'mdi-history' },
       ],
     }
@@ -99,8 +136,7 @@ export default {
   },
   methods: {
     logout() {
-      this.$store.commit('admin/clearToken') // or localStorage.removeItem('adminToken')
-      localStorage.removeItem('adminToken')
+      this.$cookies.remove('adminToken')
       this.$router.push('/admin/login')
     },
   },
@@ -111,4 +147,31 @@ export default {
 .admin-layout { font-family: 'Inter', sans-serif; }
 .brand { height: 64px; }
 .admin-appbar { border-bottom: 1px solid #e2e8f0; }
+
+/* Bottom Navigation Styles */
+.bottom-nav {
+  border-top: 1px solid #1e293b;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.3) !important;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-around;
+}
+
+/* Distribute 6 items evenly */
+.bottom-btn {
+  flex: 1;
+  min-width: 0 !important;
+  max-width: 60px;
+  padding: 0 !important;
+}
+
+.bottom-nav .v-btn--active .v-icon {
+  color: #D32F2F !important;
+}
+
+.bottom-nav .v-btn__content {
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
 </style>

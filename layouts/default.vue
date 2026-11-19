@@ -47,7 +47,7 @@
         </v-list-item>
 
         <v-list-item to="/payments" active-class="bg-red-800" :disabled="billingDue" :style="billingDue ? 'opacity: 0.5; pointer-events: none;' : ''">
-          <v-list-item-icon><v-icon>mdi-receipt</v-icon></v-list-item-icon>
+          <v-list-item-icon><v-icon>mdi-currency-usd</v-icon></v-list-item-icon>
           <v-list-item-content><v-list-item-title>Payments</v-list-item-title></v-list-item-content>
         </v-list-item>
 
@@ -82,16 +82,10 @@
 
       <v-spacer></v-spacer>
       
-      <!-- 🔥 Logout Icon Only -->
+      <!-- Logout Icon -->
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
-          <v-btn 
-            icon 
-            color="white" 
-            v-bind="attrs" 
-            v-on="on" 
-            @click="logout"
-          >
+          <v-btn icon color="white" v-bind="attrs" v-on="on" @click="logout">
             <v-icon>mdi-logout</v-icon>
           </v-btn>
         </template>
@@ -100,33 +94,54 @@
     </v-app-bar>
 
     <!-- BILLING WARNING BANNER -->
-    <v-system-bar 
-      v-if="billingDue" 
-      color="#D32F2F" 
-      dark 
-      height="48" 
-      app
-    >
+    <v-system-bar v-if="billingDue" color="#D32F2F" dark height="48" app>
       <v-icon small class="mr-2">mdi-alert-circle</v-icon>
-      <span class="font-weight-bold text-body-2 mr-4">
-        {{ billingMessage }}
-      </span>
-      <v-btn 
-        x-small 
-        color="white" 
-        class="text-none font-weight-bold red--text" 
-        to="/billing"
-      >
+      <span class="font-weight-bold text-body-2 mr-4">{{ billingMessage }}</span>
+      <v-btn x-small color="white" class="text-none font-weight-bold red--text" to="/billing">
         Update Billing
       </v-btn>
     </v-system-bar>
 
     <!-- Main Content -->
-    <v-main style="background-color: #F5F5F5; overflow-y: auto !important;">
+    <v-main style="background-color: #F5F5F5; overflow-y: auto !important;" class="pb-6">
       <v-container fluid class="pa-3 pa-md-6">
         <nuxt />
       </v-container>
     </v-main>
+
+    <!-- MOBILE BOTTOM NAVIGATION (6 ICONS) -->
+    <v-bottom-navigation
+      v-if="!billingDue"
+      app
+      background-color="#121212"
+      grow
+      class="hidden-md-and-up bottom-nav"
+      height="64"
+    >
+      <v-btn to="/dashboard" exact>
+        <v-icon color="white" size="24">mdi-view-dashboard</v-icon>
+      </v-btn>
+
+      <v-btn to="/repairs">
+        <v-icon color="white" size="24">mdi-tools</v-icon>
+      </v-btn>
+
+      <v-btn to="/pos">
+        <v-icon color="white" size="24">mdi-cash-register</v-icon>
+      </v-btn>
+
+      <v-btn to="/inventory">
+        <v-icon color="white" size="24">mdi-package-variant-closed</v-icon>
+      </v-btn>
+
+      <v-btn to="/customers">
+        <v-icon color="white" size="24">mdi-account-group</v-icon>
+      </v-btn>
+
+      <v-btn to="/payments">
+        <v-icon color="white" size="24">mdi-currency-usd</v-icon>
+      </v-btn>
+    </v-bottom-navigation>
   </v-app>
 </template>
 
@@ -232,8 +247,35 @@ html, body {
   scroll-behavior: smooth;
 }
 
+.v-main.pb-16 {
+  padding-bottom: 64px !important; 
+}
+
 .v-list-item--disabled {
   pointer-events: none !important;
+}
+
+/* Bottom Navigation Styles */
+.bottom-nav {
+  border-top: 1px solid #2d2d2d;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.3) !important;
+  overflow: hidden;
+}
+
+/* Active button styling */
+.bottom-nav .v-btn--active .v-icon {
+  color: #D32F2F !important;
+}
+
+.bottom-nav .v-btn {
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+.bottom-nav .v-btn__content {
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
 }
 
 @media (max-width: 600px) {

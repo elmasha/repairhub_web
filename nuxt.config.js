@@ -12,7 +12,7 @@ export default {
       { name: 'format-detection', content: 'telephone=no' },
       { name: 'robots', content: 'noindex,nofollow' }
     ],
-    link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.svg' }]
+    link: [{ rel: 'icon', type: 'image/x-icon', href: '/' }]
   },
 
   css: [],
